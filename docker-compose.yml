@@ -13,8 +13,8 @@ services:
   service:
     image: ${REGISTRY:-localhost:5002}/svodd-server-service:main-1
     build:
-      context: docker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./docker/service/Dockerfile
     restart: always
     depends_on:
       - registry
@@ -26,7 +26,7 @@ services:
       CONFIG_PATH: './config/local.yaml'
     command: './svodd-server-service'
     deploy:
-      replicas: 0
+      replicas: 1
       restart_policy:
         condition: on-failure
 
