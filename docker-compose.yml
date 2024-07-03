@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+
+  registry:
+    image: registry:2
+    container_name: svodd-server-registry
+    ports:
+      - "5003:5003"
+    restart: always
+    networks:
+      - svodd-server-net
+
+  service:
+    image: ${REGISTRY:-localhost:5002}/svodd-server-service:main-1
+    build:
+      context: docker
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - registry
+    networks:
+      - svodd-server-net
+    volumes:
+      - config:/app/config
+    environment:
+      CONFIG_PATH: './config/local.yaml'
+    command: './svodd-server-service'
+    deploy:
+      replicas: 0
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  config:
+
+networks:
+  traefik-public:
+    external: true
+  svodd-server-net:
+    name: svodd-server-net
+    external: true
