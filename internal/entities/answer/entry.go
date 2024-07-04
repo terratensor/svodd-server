@@ -1,7 +1,6 @@
 package answer
 
 import (
-	"context"
 	"time"
 )
 
@@ -17,12 +16,13 @@ type Entry struct {
 	ParentID   string     `json:"parent_id,omitempty"`
 	Type       string     `json:"type"`
 	Position   int        `json:"position"`
+	Chunk      int        `json:"chunk"`
 }
 
 type StorageInterface interface {
-	FindByUrl(ctx context.Context, url string) (*Entry, error)
-	Insert(ctx context.Context, entry *Entry) (*int64, error)
-	Update(ctx context.Context, entry *Entry) error
+	// FindByUrl(ctx context.Context, url string) (*Entry, error)
+	// Insert(ctx context.Context, entry *Entry) (*int64, error)
+	// Update(ctx context.Context, entry *Entry) error
 }
 
 type Entries struct {

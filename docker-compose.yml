@@ -24,6 +24,7 @@ services:
       - config:/app/config
     environment:
       CONFIG_PATH: './config/local.yaml'
+      MANTICORE_HOST: 'manticore'
     command: './svodd-server-service'
     deploy:
       replicas: 1

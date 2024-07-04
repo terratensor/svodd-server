@@ -1,10 +1,13 @@
 package workerpool
 
 import (
+	"fmt"
 	"log"
+	"log/slog"
 	"os"
 
 	"github.com/terratensor/svodd-server/internal/entities/answer"
+	"github.com/terratensor/svodd-server/internal/splitter"
 )
 
 /**
@@ -14,24 +17,32 @@ Task содержит все необходимое для обработки з
 */
 
 type Task struct {
-	Err error
-	//Entries *feed.Entries
-	Data           *answer.Entry
-	f              func(interface{}) error
-	// Splitter       splitter.Splitter
-	EntriesStorage *answer.Entries
+	Err               error
+	Data              *answer.Entry
+	f                 func(interface{}) error
+	Splitter          splitter.Splitter
+	ManticoreStorages *[]answer.Entries
+	PsqlStorage       *answer.Entries
 }
 
-func NewTaskStorage() *answer.Entries {
-	var storage answer.StorageInterface
-
-	manticoreClient, err := manticore.New("feed")
-	if err != nil {
-		log.Printf("failed to initialize manticore client, %v", err)
-		os.Exit(1)
+func NewTask(f func(interface{}) error, data answer.Entry, splitter *splitter.Splitter, storages *[]answer.Entries) *Task {
+	return &Task{
+		f:                 f,
+		Data:              &data,
+		Splitter:          *splitter,
+		ManticoreStorages: storages,
 	}
+}
 
-	storage = manticoreClient
+func process(workerID int, task *Task) {
+	fmt.Printf("Worker %d processes task %v\n", workerID, task.Data.Url)
 
-	return answer.NewAnswerStorage(storage)
+	logger := slog.New(
+		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
+	)
+
+	log.Println(logger)
+	// store := task.EntriesStorage
+
+	task.Err = task.f(task.Data)
 }
