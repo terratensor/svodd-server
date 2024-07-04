@@ -8,7 +8,7 @@ services:
       - "5003:5003"
     restart: always
     networks:
-      - svodd-server-net
+      - svodd-network
 
   service:
     image: ${REGISTRY:-localhost:5002}/svodd-server-service:main-1
@@ -19,7 +19,7 @@ services:
     depends_on:
       - registry
     networks:
-      - svodd-server-net
+      - svodd-network
     volumes:
       - config:/app/config
     environment:
@@ -37,6 +37,6 @@ volumes:
 networks:
   traefik-public:
     external: true
-  svodd-server-net:
-    name: svodd-server-net
+  svodd-network:
+    name: svodd-network
     external: true
