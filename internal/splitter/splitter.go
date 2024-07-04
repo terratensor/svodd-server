@@ -31,10 +31,10 @@ func (sp *Splitter) SplitEntry(ctx context.Context, entry answer.Entry) []answer
 	for chunk, content := range contentChunks {
 
 		newEntry := answer.Entry{
-			Url:        entry.Url,
 			Username:   entry.Username,
 			Text:       content,
 			AvatarFile: entry.AvatarFile,
+			Url:        entry.Url,
 			Role:       entry.Role,
 			Datetime:   entry.Datetime,
 			DataID:     entry.DataID,

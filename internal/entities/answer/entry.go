@@ -6,10 +6,10 @@ import (
 
 type Entry struct {
 	ID         *int64     `json:"id"`
-	Url        string     `json:"url"`
 	Username   string     `json:"username"`
 	Text       string     `json:"text"`
 	AvatarFile string     `json:"avatar_file"`
+	Url        string     `json:"url"`
 	Role       string     `json:"role"`
 	Datetime   *time.Time `json:"datetime"`
 	DataID     string     `json:"data_id,omitempty"`
