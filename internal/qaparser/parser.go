@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/terratensor/svodd-server/internal/config"
-	"github.com/terratensor/svodd-server/internal/entities/answer"
 	"github.com/terratensor/svodd-server/internal/qaparser/qaquestion"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
 )
@@ -33,16 +32,18 @@ func (err HTTPError) Error() string {
 }
 
 type Parser struct {
-	Link        *url.URL
-	Delay       time.Duration
-	RandomDelay time.Duration
-	UserAgent   string
-	Current     bool
-	Previous    bool
-	FollowPages *int
-	Client      *http.Client
-	qavideo     *qavideo.Parser
-	qaquestion  *qaquestion.Parser
+	Link                 *url.URL
+	Delay                time.Duration
+	RandomDelay          time.Duration
+	UserAgent            string
+	Current              bool
+	Previous             bool
+	FollowPages          *int
+	Client               *http.Client
+	QAVideoTranslator    Translator
+	QAQuestionTranslator Translator
+	qavideo              *qavideo.Parser
+	qaquestion           *qaquestion.Parser
 }
 
 // NewParser creates a new Parser with the given URL, delay, and randomDelay.
@@ -77,7 +78,7 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 	return &np
 }
 
-func (p *Parser) Run(ch chan answer.Entry, wg *sync.WaitGroup) {
+func (p *Parser) Run(ch chan Entry, wg *sync.WaitGroup) {
 
 	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link.String())
 
@@ -113,7 +114,7 @@ loop:
 	}
 }
 
-func (p *Parser) Parse(r io.Reader) (entries *[]answer.Entry, err error) {
+func (p *Parser) Parse(r io.Reader) (entries *[]Entry, err error) {
 
 	feedType := DetectFeedType(p.Link)
 	log.Printf("feed type: %v", feedType)
@@ -132,7 +133,7 @@ func (p *Parser) Parse(r io.Reader) (entries *[]answer.Entry, err error) {
 
 // }
 
-func (p *Parser) ParseURL(link *url.URL) (*[]answer.Entry, error) {
+func (p *Parser) ParseURL(link *url.URL) (*[]Entry, error) {
 	entries, err := p.ParseURLWithContext(link, context.Background())
 	if err != nil {
 		log.Printf("ERROR: %v, %v", err, link)
@@ -142,7 +143,7 @@ func (p *Parser) ParseURL(link *url.URL) (*[]answer.Entry, error) {
 
 }
 
-func (p *Parser) ParseURLWithContext(link *url.URL, ctx context.Context) (entries *[]answer.Entry, err error) {
+func (p *Parser) ParseURLWithContext(link *url.URL, ctx context.Context) (entries *[]Entry, err error) {
 	client := p.httpClient()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", link.String(), nil)
@@ -176,22 +177,38 @@ func (p *Parser) ParseURLWithContext(link *url.URL, ctx context.Context) (entrie
 	return p.Parse(resp.Body)
 }
 
-func (p *Parser) parseQAFeed(feed io.Reader) (*[]answer.Entry, error) {
+func (p *Parser) parseQAFeed(feed io.Reader) (*[]Entry, error) {
 	qavideo, err := p.qavideo.Parse(feed)
 	if err != nil {
 		return nil, err
 	}
 
-	return qavideo, nil
+	return p.qavideoTrans().Translate(qavideo)
 }
 
-func (p *Parser) parseQAQuestionFeed(feed io.Reader) (*[]answer.Entry, error) {
+func (p *Parser) parseQAQuestionFeed(feed io.Reader) (*[]Entry, error) {
 	qaquestion, err := p.qaquestion.Parse(feed)
 	if err != nil {
 		return nil, err
 	}
 
-	return qaquestion, nil
+	return p.qaquestionTrans().Translate(qaquestion)
+}
+
+func (p *Parser) qavideoTrans() Translator {
+	if p.QAVideoTranslator != nil {
+		return p.QAVideoTranslator
+	}
+	p.QAVideoTranslator = &DefaultQAVideoTranslator{}
+	return p.QAVideoTranslator
+}
+
+func (p *Parser) qaquestionTrans() Translator {
+	if p.QAQuestionTranslator != nil {
+		return p.QAQuestionTranslator
+	}
+	p.QAQuestionTranslator = &DefaultQAQuestionTranslator{}
+	return p.QAQuestionTranslator
 }
 
 func (p *Parser) httpClient() *http.Client {

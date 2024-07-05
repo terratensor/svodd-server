@@ -8,8 +8,6 @@ import (
 	"net/url"
 
 	"golang.org/x/net/html"
-
-	"github.com/terratensor/svodd-server/internal/entities/answer"
 )
 
 // Parser Вопрос — Ответ видео выпуски парсер
@@ -17,8 +15,8 @@ type Parser struct {
 	Link *url.URL
 }
 
-func (p *Parser) Parse(r io.Reader) (*[]answer.Entry, error) {
-	var entries []answer.Entry // TODO: implement type
+func (p *Parser) Parse(r io.Reader) (*Feed, error) {
+	var feed Feed // TODO: implement type
 
 	node, err := html.Parse(r)
 	if err != nil {
@@ -49,5 +47,5 @@ func (p *Parser) Parse(r io.Reader) (*[]answer.Entry, error) {
 	// make a recursive call to your function
 	processAllProduct(node)
 
-	return &entries, nil
+	return &feed, nil
 }

@@ -15,7 +15,7 @@ import (
 func main() {
 	cfg := config.MustLoad()
 
-	ch := make(chan answer.Entry, cfg.EntryChanBuffer)
+	ch := make(chan qaparser.Entry, cfg.EntryChanBuffer)
 
 	wg := &sync.WaitGroup{}
 	for _, parserCfg := range cfg.Parsers {

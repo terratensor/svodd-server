@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/terratensor/svodd-server/internal/entities/answer"
+	"github.com/terratensor/svodd-server/internal/qaparser"
 	"github.com/terratensor/svodd-server/internal/splitter"
 )
 
@@ -18,14 +19,14 @@ Task содержит все необходимое для обработки з
 
 type Task struct {
 	Err               error
-	Data              *answer.Entry
+	Data              *qaparser.Entry
 	f                 func(interface{}) error
 	Splitter          splitter.Splitter
 	ManticoreStorages *[]answer.Entries
 	PsqlStorage       *answer.Entries
 }
 
-func NewTask(f func(interface{}) error, data answer.Entry, splitter *splitter.Splitter, storages *[]answer.Entries) *Task {
+func NewTask(f func(interface{}) error, data qaparser.Entry, splitter *splitter.Splitter, storages *[]answer.Entries) *Task {
 	return &Task{
 		f:                 f,
 		Data:              &data,
