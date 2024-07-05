@@ -7,7 +7,7 @@ import (
 	"github.com/terratensor/svodd-server/internal/app"
 	"github.com/terratensor/svodd-server/internal/config"
 	"github.com/terratensor/svodd-server/internal/entities/answer"
-	"github.com/terratensor/svodd-server/internal/parsers/videoparser"
+	"github.com/terratensor/svodd-server/internal/qaparser"
 	"github.com/terratensor/svodd-server/internal/splitter"
 	"github.com/terratensor/svodd-server/internal/workerpool"
 )
@@ -21,7 +21,7 @@ func main() {
 	for _, parserCfg := range cfg.Parsers {
 
 		wg.Add(1)
-		parser := videoparser.NewParser(parserCfg, *cfg.Delay, *cfg.RandomDelay)
+		parser := qaparser.NewParser(parserCfg, *cfg.Delay, *cfg.RandomDelay)
 		go parser.Run(ch, wg)
 	}
 

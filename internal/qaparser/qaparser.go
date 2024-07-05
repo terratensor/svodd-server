@@ -1,4 +1,4 @@
-package videoparser
+package qaparser
 
 import (
 	"context"
