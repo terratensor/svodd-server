@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/manticoresoftware/manticoresearch-go v1.0.0
+	golang.org/x/net v0.27.0
 )
 
 require (

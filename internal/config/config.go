@@ -13,7 +13,7 @@ type Config struct {
 	Workers         int            `yaml:"workers" env-default:"5"`
 	Delay           *time.Duration `yaml:"delay" env-default:"60s"`
 	RandomDelay     *time.Duration `yaml:"random_delay" env-default:"150s"`
-	ManticoreIndex  []Index       `yaml:"manticore"`
+	ManticoreIndex  []Index        `yaml:"manticore"`
 	EntryChanBuffer int            `yaml:"entry_chan_buffer" env-default:"20"`
 	Splitter        Splitter       `yaml:"splitter"`
 	Parsers         []Parser       `yaml:"parsers"`
@@ -25,8 +25,9 @@ type Index struct {
 
 type Parser struct {
 	Url         string         `yaml:"url"`
-	Lang        string         `yaml:"lang"`
-	ResourceID  int            `yaml:"resource_id"`
+	Current     bool           `yaml:"current" env-default:"true"`
+	Previous    bool           `yaml:"previous" env-default:"false"`
+	Pages       *int           `yaml:"pages,omitempty"`
 	UserAgent   string         `yaml:"user_agent,omitempty"`
 	Delay       *time.Duration `yaml:"delay,omitempty"`
 	RandomDelay *time.Duration `yaml:"random_delay,omitempty"`

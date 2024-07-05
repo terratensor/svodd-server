@@ -20,7 +20,7 @@ import (
 
 // ErrFeedTypeNotDetected is returned when the detection system can not figure
 // out the Feed format
-var ErrFeedTypeNotDetected = errors.New("Failed to detect feed type")
+var ErrFeedTypeNotDetected = errors.New("failed to detect feed type")
 
 // HTTPError represents an HTTP error returned by a server.
 type HTTPError struct {
@@ -37,6 +37,9 @@ type Parser struct {
 	Delay       time.Duration
 	RandomDelay time.Duration
 	UserAgent   string
+	Current     bool
+	Previous    bool
+	FollowPages *int
 	Client      *http.Client
 	qavideo     *qavideo.Parser
 	qaquestion  *qaquestion.Parser
@@ -56,12 +59,19 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 	if cfg.RandomDelay != nil {
 		randomDelay = *cfg.RandomDelay
 	}
+	userAgent := "svodd/1.0"
+	if cfg.RandomDelay != nil {
+		userAgent = cfg.UserAgent
+	}
 	np := Parser{
 		Link:        newLink,
 		Delay:       delay,
 		RandomDelay: randomDelay,
-		UserAgent:   "svodd/1.0",
-		qavideo:     &qavideo.Parser{},
+		UserAgent:   userAgent,
+		Current:     cfg.Current,
+		Previous:    cfg.Previous,
+		FollowPages: cfg.Pages,
+		qavideo:     &qavideo.Parser{Link: newLink},
 		qaquestion:  &qaquestion.Parser{},
 	}
 	return &np
@@ -87,7 +97,7 @@ loop:
 		if err != nil {
 			log.Printf("failed to parse url %v, %v", p.Link, err)
 			continue
-			
+
 		}
 		log.Printf("fetched the contents of a given url %v", p.Link)
 
@@ -117,6 +127,10 @@ func (p *Parser) Parse(r io.Reader) (entries *[]answer.Entry, err error) {
 
 	return nil, ErrFeedTypeNotDetected
 }
+
+// func (p *Parser) Pipeline() (*[]answer.Entry, error) {
+
+// }
 
 func (p *Parser) ParseURL(link *url.URL) (*[]answer.Entry, error) {
 	entries, err := p.ParseURLWithContext(link, context.Background())
