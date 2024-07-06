@@ -36,7 +36,6 @@ type Parser struct {
 	Delay                time.Duration
 	RandomDelay          time.Duration
 	UserAgent            string
-	Current              bool
 	Previous             bool
 	FollowPages          *int
 	Client               *http.Client
@@ -69,7 +68,6 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 		Delay:       delay,
 		RandomDelay: randomDelay,
 		UserAgent:   userAgent,
-		Current:     cfg.Current,
 		Previous:    cfg.Previous,
 		FollowPages: cfg.Pages,
 		qavideo:     &qavideo.Parser{Link: newLink},

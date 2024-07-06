@@ -25,7 +25,6 @@ type Index struct {
 
 type Parser struct {
 	Url         string         `yaml:"url"`
-	Current     bool           `yaml:"current" env-default:"true"`
 	Previous    bool           `yaml:"previous" env-default:"false"`
 	Pages       *int           `yaml:"pages,omitempty"`
 	UserAgent   string         `yaml:"user_agent,omitempty"`

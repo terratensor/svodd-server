@@ -12,7 +12,6 @@ splitter:
 parsers:
     # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/question/view-50275
   - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
-    current: true
     previous: false
     pages: 0
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
