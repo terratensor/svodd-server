@@ -70,7 +70,7 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 		UserAgent:   userAgent,
 		Previous:    cfg.Previous,
 		FollowPages: cfg.Pages,
-		qavideo:     &qavideo.Parser{Link: newLink},
+		qavideo:     &qavideo.Parser{Link: newLink, FollowPages: cfg.Pages},
 		qaquestion:  &qaquestion.Parser{},
 	}
 	return &np
@@ -112,6 +112,10 @@ loop:
 	}
 }
 
+// func GetResBody(link *url.URL) ([]byte, error) {
+
+// }
+
 func (p *Parser) Parse(r io.Reader) (entries *[]Entry, err error) {
 
 	feedType := DetectFeedType(p.Link)
@@ -119,17 +123,26 @@ func (p *Parser) Parse(r io.Reader) (entries *[]Entry, err error) {
 
 	switch feedType {
 	case FeedTypeQA:
-		return p.parseQAFeed(r)
+		// return p.parseQAFeed(r)
+		// link, err := p.qavideo.ParseQAFirst(r)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// log.Printf("link: %v", link)
+		// links, _ := p.qavideo.ParseQAList(r)
+		// log.Printf("links: %v", links)
+		link, err := qavideo.ParseQACurrent(p.Link.String())
+		if err != nil {
+			return nil, err
+		}
+		log.Printf("link: %v", link)
+		return nil, nil
 	case FeedTypeQAQuestion:
 		return p.parseQAQuestionFeed(r)
 	}
 
 	return nil, ErrFeedTypeNotDetected
 }
-
-// func (p *Parser) Pipeline() (*[]answer.Entry, error) {
-
-// }
 
 func (p *Parser) ParseURL(link *url.URL) (*[]Entry, error) {
 	entries, err := p.ParseURLWithContext(link, context.Background())
