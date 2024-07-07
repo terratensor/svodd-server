@@ -4,17 +4,16 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
-// Parser Вопрос — Ответ видео выпуски парсер
-type Parser struct {
-	Link        *url.URL
-	FollowPages *int
-}
+// // Parser Вопрос — Ответ видео выпуски парсер
+// type Parser struct {
+// 	Link        *url.URL
+// 	FollowPages *int
+// }
 
 func (p *Parser) Parse(r io.Reader) (*Feed, error) {
 	var feed Feed // TODO: implement type

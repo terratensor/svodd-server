@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net/url"
 	"os"
 
 	"github.com/terratensor/svodd-server/internal/entities/answer"
-	"github.com/terratensor/svodd-server/internal/qaparser"
 	"github.com/terratensor/svodd-server/internal/splitter"
 )
 
@@ -19,24 +19,24 @@ Task содержит все необходимое для обработки з
 
 type Task struct {
 	Err               error
-	Data              *qaparser.Entry
+	Data              *url.URL
 	f                 func(interface{}) error
 	Splitter          splitter.Splitter
 	ManticoreStorages *[]answer.Entries
 	PsqlStorage       *answer.Entries
 }
 
-func NewTask(f func(interface{}) error, data qaparser.Entry, splitter *splitter.Splitter, storages *[]answer.Entries) *Task {
+func NewTask(f func(interface{}) error, data *url.URL, splitter *splitter.Splitter, storages *[]answer.Entries) *Task {
 	return &Task{
 		f:                 f,
-		Data:              &data,
+		Data:              data,
 		Splitter:          *splitter,
 		ManticoreStorages: storages,
 	}
 }
 
 func process(workerID int, task *Task) {
-	fmt.Printf("Worker %d processes task %v\n", workerID, task.Data.Url)
+	fmt.Printf("Worker %d processes task %v\n", workerID, task.Data)
 
 	logger := slog.New(
 		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),

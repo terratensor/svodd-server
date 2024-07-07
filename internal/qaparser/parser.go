@@ -131,11 +131,6 @@ func (p *Parser) Parse(r io.Reader) (entries *[]Entry, err error) {
 		// log.Printf("link: %v", link)
 		// links, _ := p.qavideo.ParseQAList(r)
 		// log.Printf("links: %v", links)
-		link, err := qavideo.ParseQACurrent(p.Link.String())
-		if err != nil {
-			return nil, err
-		}
-		log.Printf("link: %v", link)
 		return nil, nil
 	case FeedTypeQAQuestion:
 		return p.parseQAQuestionFeed(r)
