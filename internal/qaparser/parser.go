@@ -70,7 +70,7 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 		UserAgent:   userAgent,
 		Previous:    cfg.Previous,
 		FollowPages: cfg.Pages,
-		qavideo:     &qavideo.Parser{Link: newLink, FollowPages: cfg.Pages},
+		qavideo:     &qavideo.Parser{Link: newLink, MaxPages: cfg.Pages},
 		qaquestion:  &qaquestion.Parser{},
 	}
 	return &np

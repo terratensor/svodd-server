@@ -2,6 +2,7 @@ package qavideopage
 
 import (
 	"bytes"
+	"log"
 	"net/url"
 
 	"github.com/PuerkitoBio/goquery"
@@ -34,31 +35,30 @@ func New(body []byte) (*Page, error) {
 
 // FetchAndParsePages fetches and parses pages from a given URL using the provided HTTP client.
 //
-// It takes in a pointer to an httpclient.HttpClient, a starting URL, and a
-// maximum number of pages to fetch.
-//
-// It returns a channel of type *Page, which will be populated with parsed Page
-// structs. The channel is buffered with the maximum number of pages.
-func FetchAndParsePages(client *httpclient.HttpClient, startingURL url.URL, maxPages int) chan *Page {
-	pageChannel := make(chan *Page, maxPages)
+// It takes in a pointer to an httpclient.HttpClient, a starting URL, and a maximum number of pages to fetch.
+// It returns a channel of type *Page, which will be populated with parsed Page structs.
+// The channel is buffered with the maximum number of pages.
+func FetchAndParsePages(client *httpclient.HttpClient, startURL url.URL, maxPages int) <-chan *Page {
+	pageChan := make(chan *Page, maxPages)
+	if maxPages == 0 {
+		// todo code for all pages
+		log.Println("maxPages = 0, fetching all pages")
+	}
 
 	go func() {
-		defer close(pageChannel)
+		defer close(pageChan)
 
-		currentURL := startingURL
+		currentURL := startURL
 		for i := 0; i < maxPages; i++ {
 			resBytes, _ := client.Get(&currentURL)
-			page, err := New(resBytes)
-			if err != nil {
-				continue
-			}
+			page, _ := New(resBytes)
 
 			currentURL.RawQuery = page.Next().RawQuery
-			pageChannel <- page
+			pageChan <- page
 		}
 	}()
 
-	return pageChannel
+	return pageChan
 }
 
 func (p *Page) Active() *url.URL {
