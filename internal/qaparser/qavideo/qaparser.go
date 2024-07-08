@@ -73,47 +73,34 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 	return &np
 }
 
-func (p *Parser) Run(ch chan *url.URL, wg *sync.WaitGroup) {
-	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link)
+// Run is a method of the Parser struct that runs the parser.
+//
+// It takes a channel of URLs and a WaitGroup as parameters.
+// It does not return anything.
+func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
+	log.Printf("Starting parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link)
 
 	defer wg.Done()
-loop:
+
 	for {
+		delayWithRandomness := p.Delay + time.Duration(rand.Int63n(int64(p.RandomDelay)))
+		time.Sleep(delayWithRandomness)
 
-		randomDelay := time.Duration(0)
-		if p.RandomDelay != 0 {
-			randomDelay = time.Duration(rand.Int63n(int64(p.RandomDelay)))
-		}
-		time.Sleep(p.Delay + randomDelay)
-
-		log.Printf("started parser for given url: %v", p.Link)
-		// Передаем *p.link чтобы сделать копию и передать значение ссылки,
-		// которое будет меняться только внутри функции
-		chin := qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.FollowPages)
+		log.Printf("Started parser for given URL: %v", p.Link)
 
 		go func() {
-			// defer close(chout)
-			for {
-				select {
-				case <-context.Background().Done():
-					return
-				case page, ok := <-chin:
-					if !ok {
-						return
-					}
-					for _, entry := range page.ListQALinks() {
-						ch <- entry
-					}
-					// chout <- l
+			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.FollowPages) {
+				for _, entry := range page.ListQALinks() {
+					output <- entry
 				}
 			}
 		}()
 
-		log.Printf("fetched the contents of a given url %v", p.Link)
+		log.Printf("Fetched the contents of a given URL: %v", p.Link)
 
 		select {
 		case <-context.Background().Done():
-			break loop
+			return
 		default:
 		}
 	}
