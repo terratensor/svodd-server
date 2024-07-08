@@ -61,7 +61,7 @@ func NewParser(cfg config.Parser, delay time.Duration, randomDelay time.Duration
 	}
 	userAgent := "svodd/1.0"
 	if cfg.RandomDelay != nil {
-		userAgent = cfg.UserAgent
+		userAgent = *cfg.UserAgent
 	}
 	np := Parser{
 		Link:        newLink,

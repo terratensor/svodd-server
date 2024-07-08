@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/terratensor/svodd-server/internal/lib/httpclient"
 )
 
 type Page struct {
@@ -31,7 +32,28 @@ func New(body []byte) (*Page, error) {
 	return &Page{Links: links, Pagination: pagination}, nil
 }
 
-func (p * Page) Active() *url.URL {
+func Parse(client *httpclient.HttpClient, initialLink url.URL, maxPages *int) chan *Page {
+	pageCh := make(chan *Page, *maxPages)
+
+	go func() {
+		defer close(pageCh)
+
+		for i := 0; i < *maxPages; i++ {
+			resBytes, _ := client.Get(&initialLink)
+			page, err := New(resBytes)
+			if err != nil {
+				continue
+			}
+
+			initialLink.RawQuery = page.Next().RawQuery
+			pageCh <- page
+		}
+	}()
+
+	return pageCh
+}
+
+func (p *Page) Active() *url.URL {
 	return p.Pagination.Active
 }
 

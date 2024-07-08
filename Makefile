@@ -8,6 +8,9 @@ restart: down up
 test:
 	go test -v ./...
 
+lint:
+	golangci-lint run -v
+
 docker-up:
 	docker compose up -d
 docker-down:

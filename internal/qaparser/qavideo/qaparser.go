@@ -3,13 +3,15 @@ package qavideo
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
+	"math/rand"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/terratensor/svodd-server/internal/config"
+	"github.com/terratensor/svodd-server/internal/lib/httpclient"
+	"github.com/terratensor/svodd-server/internal/qaparser/qavideopage"
 )
 
 type Links []*url.URL
@@ -37,7 +39,7 @@ type Parser struct {
 	UserAgent   string
 	Previous    bool
 	FollowPages *int
-	Client      *http.Client
+	Client      *httpclient.HttpClient
 }
 
 // NewParser creates a new Parser with the given URL, delay, and randomDelay.
@@ -55,9 +57,10 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 		randomDelay = *cfg.RandomDelay
 	}
 	userAgent := "svodd/1.0"
-	if cfg.RandomDelay != nil {
-		userAgent = cfg.UserAgent
+	if cfg.UserAgent != nil {
+		userAgent = *cfg.UserAgent
 	}
+	client := httpclient.New(&userAgent)
 	np := Parser{
 		Link:        newLink,
 		Delay:       delay,
@@ -65,50 +68,53 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 		UserAgent:   userAgent,
 		Previous:    cfg.Previous,
 		FollowPages: cfg.Pages,
+		Client:      client,
 	}
 	return &np
 }
 
-// Request sends an HTTP GET request to the specified URL using the provided Parser instance.
-//
-// Parameters:
-// - link: A pointer to a url.URL struct representing the URL to send the request to.
-//
-// Returns:
-// - []byte: The response body as a byte slice.
-// - error: An error if the request fails or the response status code is not in the 200-299 range.
-func (p *Parser) Request(link *url.URL) ([]byte, error) {
-	client := p.httpClient()
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, link.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", p.UserAgent)
+func (p *Parser) Run(ch chan *url.URL, wg *sync.WaitGroup) {
+	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
+	defer wg.Done()
+loop:
+	for {
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, HTTPError{
-			StatusCode: resp.StatusCode,
-			Status:     resp.Status,
+		randomDelay := time.Duration(0)
+		if p.RandomDelay != 0 {
+			randomDelay = time.Duration(rand.Int63n(int64(p.RandomDelay)))
+		}
+		time.Sleep(p.Delay + randomDelay)
+
+		log.Printf("started parser for given url: %v", p.Link)
+		// Передаем *p.link чтобы сделать копию и передать значение ссылки,
+		// которое будет меняться только внутри функции
+		chin := qavideopage.Parse(p.Client, *p.Link, p.FollowPages)
+
+		go func() {
+			// defer close(chout)
+			for {
+				select {
+				case <-context.Background().Done():
+					return
+				case page, ok := <-chin:
+					if !ok {
+						return
+					}
+					for _, entry := range page.ListQALinks() {
+						ch <- entry
+					}
+					// chout <- l
+				}
+			}
+		}()
+
+		log.Printf("fetched the contents of a given url %v", p.Link)
+
+		select {
+		case <-context.Background().Done():
+			break loop
+		default:
 		}
 	}
-
-	return io.ReadAll(resp.Body)
-}
-
-// ErrNoLinkFound is returned when no link is found in the QA block
-var ErrNoLinkFound = fmt.Errorf("no link found in the QA block")
-var ErrNoNextPageFound = fmt.Errorf("no next page found")
-
-func (p *Parser) httpClient() *http.Client {
-	if p.Client != nil {
-		return p.Client
-	}
-	p.Client = &http.Client{}
-	return p.Client
 }

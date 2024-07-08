@@ -37,7 +37,7 @@ func Run(p *qavideo.Parser, wg *sync.WaitGroup) {
 	time.Sleep(p.Delay + randomDelay)
 
 	log.Printf("started parser for given url: %v", p.Link)
-	resBytes, _ := p.Request(p.Link)
+	resBytes, _ := p.Client.Get(p.Link)
 	// log.Printf("res: %v, err: %v", res, err)
 	page, err := qavideopage.New(resBytes)
 	if err != nil {
