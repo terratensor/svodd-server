@@ -183,15 +183,6 @@ func (p *Parser) ParseURLWithContext(link *url.URL, ctx context.Context) (entrie
 	return p.Parse(resp.Body)
 }
 
-func (p *Parser) parseQAFeed(feed io.Reader) (*[]Entry, error) {
-	qavideo, err := p.qavideo.Parse(feed)
-	if err != nil {
-		return nil, err
-	}
-
-	return p.qavideoTrans().Translate(qavideo)
-}
-
 func (p *Parser) parseQAQuestionFeed(feed io.Reader) (*[]Entry, error) {
 	qaquestion, err := p.qaquestion.Parse(feed)
 	if err != nil {
@@ -199,14 +190,6 @@ func (p *Parser) parseQAQuestionFeed(feed io.Reader) (*[]Entry, error) {
 	}
 
 	return p.qaquestionTrans().Translate(qaquestion)
-}
-
-func (p *Parser) qavideoTrans() Translator {
-	if p.QAVideoTranslator != nil {
-		return p.QAVideoTranslator
-	}
-	p.QAVideoTranslator = &DefaultQAVideoTranslator{}
-	return p.QAVideoTranslator
 }
 
 func (p *Parser) qaquestionTrans() Translator {

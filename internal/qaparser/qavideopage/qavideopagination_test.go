@@ -29,10 +29,7 @@ func TestPagination_Parse(t *testing.T) {
 		`))
 
 		p := &Pagination{}
-		err := p.Parse(doc)
-		if err != nil {
-			t.Errorf("Parse() returned an error: %v", err)
-		}
+		p.Parse(doc)
 
 		expectedFirst := &url.URL{Path: "/page1"}
 		expectedPrev := &url.URL{Path: "/page2"}
@@ -67,10 +64,7 @@ func TestPagination_Parse(t *testing.T) {
 		`))
 
 		p := &Pagination{}
-		err := p.Parse(doc)
-		if err != nil {
-			t.Errorf("Parse() returned an error: %v", err)
-		}
+		p.Parse(doc)
 
 		// Check if all pagination links are nil
 		if p.Active != nil {
