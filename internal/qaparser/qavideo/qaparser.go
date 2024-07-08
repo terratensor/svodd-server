@@ -1,7 +1,6 @@
 package qavideo
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,7 +9,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/terratensor/svodd-server/internal/config"
 )
 
@@ -101,28 +99,6 @@ func (p *Parser) Request(link *url.URL) ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
-}
-
-// FirstLink retrieves the first link in the QA block of the given HTML body.
-//
-// It takes a pointer to a Parser object, a pointer to a URL object, and a byte
-// slice representing the HTML body.
-//
-// It returns a pointer to a URL object and an error.
-func (p *Parser) FirstLink(body []byte) (*url.URL, error) {
-	// Load the HTML
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	// Find the first link in the QA block
-	linkEl := doc.Find("#answer-list .block a").First()
-	if linkEl.Nodes == nil {
-		return nil, ErrNoLinkFound
-	}
-	href, _ := linkEl.Attr("href")
-
-	return url.Parse(href)
 }
 
 // ErrNoLinkFound is returned when no link is found in the QA block

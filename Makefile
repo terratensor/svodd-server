@@ -5,6 +5,9 @@ up: docker-up
 down: docker-down
 restart: down up
 
+test:
+	go test -v ./...
+
 docker-up:
 	docker compose up -d
 docker-down:

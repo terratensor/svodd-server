@@ -26,6 +26,9 @@ func main() {
 }
 
 func Run(p *qavideo.Parser, wg *sync.WaitGroup) {
+	log.Printf("*p.Link: %v", *p.Link)
+	log.Printf("p.Link: %v", p.Link)
+	log.Printf("&p.Link: %v", &p.Link)
 	defer wg.Done()
 	randomDelay := time.Duration(0)
 	if p.RandomDelay != 0 {

@@ -73,7 +73,9 @@ loop:
 		time.Sleep(p.Delay + randomDelay)
 
 		log.Printf("started parser for given url: %v", p.Link)
-		chin := ProcessPages(p, p.Link, ch)
+		// Передаем *p.link чтобы сделать копию и передать значение ссылки,
+		// которое будет меняться только внутри функции
+		chin := ProcessPages(p, *p.Link, ch)
 
 		go func() {
 			// defer close(chout)
@@ -103,21 +105,19 @@ loop:
 	}
 }
 
-func ProcessPages(p *qavideo.Parser, link *url.URL, ch chan *url.URL) chan *qavideopage.Page {
+func ProcessPages(p *qavideo.Parser, link url.URL, ch chan *url.URL) chan *qavideopage.Page {
 
-	// var page qavideopage.Page
 	pch := make(chan *qavideopage.Page, 5)
 	go func() {
 		defer close(pch)
-		log.Println(*p.FollowPages, "follow pages")
 		for i := 0; i < *p.FollowPages; i++ {
-			resBytes, _ := p.Request(link)
+			log.Printf("follow link: %v", link)
+			resBytes, _ := p.Request(&link)
 			page, err := qavideopage.New(resBytes)
 			if err != nil {
 				log.Printf("failed to parse url %v, %v", link, err)
 			}
 			link.RawQuery = page.Next().RawQuery
-			log.Printf("next link: %v", link)
 			pch <- page
 		}
 	}()
