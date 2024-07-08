@@ -89,7 +89,7 @@ loop:
 		log.Printf("started parser for given url: %v", p.Link)
 		// Передаем *p.link чтобы сделать копию и передать значение ссылки,
 		// которое будет меняться только внутри функции
-		chin := qavideopage.Parse(p.Client, *p.Link, p.FollowPages)
+		chin := qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.FollowPages)
 
 		go func() {
 			// defer close(chout)

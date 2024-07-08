@@ -32,25 +32,33 @@ func New(body []byte) (*Page, error) {
 	return &Page{Links: links, Pagination: pagination}, nil
 }
 
-func Parse(client *httpclient.HttpClient, initialLink url.URL, maxPages *int) chan *Page {
-	pageCh := make(chan *Page, *maxPages)
+// FetchAndParsePages fetches and parses pages from a given URL using the provided HTTP client.
+//
+// It takes in a pointer to an httpclient.HttpClient, a starting URL, and a
+// maximum number of pages to fetch.
+//
+// It returns a channel of type *Page, which will be populated with parsed Page
+// structs. The channel is buffered with the maximum number of pages.
+func FetchAndParsePages(client *httpclient.HttpClient, startingURL url.URL, maxPages int) chan *Page {
+	pageChannel := make(chan *Page, maxPages)
 
 	go func() {
-		defer close(pageCh)
+		defer close(pageChannel)
 
-		for i := 0; i < *maxPages; i++ {
-			resBytes, _ := client.Get(&initialLink)
+		currentURL := startingURL
+		for i := 0; i < maxPages; i++ {
+			resBytes, _ := client.Get(&currentURL)
 			page, err := New(resBytes)
 			if err != nil {
 				continue
 			}
 
-			initialLink.RawQuery = page.Next().RawQuery
-			pageCh <- page
+			currentURL.RawQuery = page.Next().RawQuery
+			pageChannel <- page
 		}
 	}()
 
-	return pageCh
+	return pageChannel
 }
 
 func (p *Page) Active() *url.URL {
