@@ -39,6 +39,7 @@ type Parser struct {
 	UserAgent   string
 	Previous    bool
 	MaxPages    int
+	FetchAll    bool
 	Client      *httpclient.HttpClient
 }
 
@@ -72,6 +73,7 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 		UserAgent:   userAgent,
 		Previous:    cfg.Previous,
 		MaxPages:    cfg.Pages,
+		FetchAll:    cfg.FetchAll,
 		Client:      client,
 	}
 	return &np
@@ -92,13 +94,23 @@ func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 
 		log.Printf("Started parser for given URL: %v", p.Link)
 
-		go func() {
-			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
-				for _, entry := range page.ListQALinks() {
-					output <- entry
+		if !p.FetchAll {
+			go func() {
+				for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
+					for _, entry := range page.ListQALinks() {
+						output <- entry
+					}
 				}
-			}
-		}()
+			}()
+		} else {
+			go func() {
+				for page := range qavideopage.FetchAndParseAll(p.Client, *p.Link) {
+					for _, entry := range page.ListQALinks() {
+						output <- entry
+					}
+				}
+			}()
+		}
 
 		log.Printf("Fetched the contents of a given URL: %v", p.Link)
 
@@ -110,18 +122,32 @@ func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 	}
 }
 
+// Run runs the Parser and fetches the contents of a given URL.
+//
+// It takes a channel of URLs and a WaitGroup as parameters.
+// It does not return anything.
 func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
 
 	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link.String())
 	// chout := make(chan *url.URL, 20)
 	defer wg.Done()
-
-	go func() {
-		defer close(output)
-		for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
-			for _, entry := range page.ListQALinks() {
-				output <- entry
+	if !p.FetchAll {
+		go func() {
+			defer close(output)
+			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
+				for _, entry := range page.ListQALinks() {
+					output <- entry
+				}
 			}
-		}
-	}()
+		}()
+	} else {
+		go func() {
+			defer close(output)
+			for page := range qavideopage.FetchAndParseAll(p.Client, *p.Link) {
+				for _, entry := range page.ListQALinks() {
+					output <- entry
+				}
+			}
+		}()
+	}
 }

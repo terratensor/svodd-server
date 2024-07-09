@@ -11,8 +11,9 @@ splitter:
   max_chunk_size: 3600 # максимальный размер фрагмента контента для поиска
 parsers:
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/question/view-50275
-  - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
+  - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video?page=108&per-page=5
     pages: 2
+    fetch_all: true
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
   #   pages: 0
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video

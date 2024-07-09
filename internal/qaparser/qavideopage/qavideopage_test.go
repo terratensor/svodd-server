@@ -96,3 +96,43 @@ func TestNew(t *testing.T) {
 		t.Errorf("Expected Last to be %v, but got %v", expectedLast, page.Pagination.Last)
 	}
 }
+
+func TestNext(t *testing.T) {
+	t.Run("NextURLNotNil", func(t *testing.T) {
+		p := &Page{
+			Pagination: Pagination{
+				Next: &url.URL{Path: "/next"},
+			},
+		}
+
+		nextURL, err := p.Next()
+
+		if err != nil {
+			t.Errorf("Expected no error, got %v", err)
+		}
+
+		expectedURL := &url.URL{Path: "/next"}
+		if !reflect.DeepEqual(nextURL, expectedURL) {
+			t.Errorf("Expected nextURL to be %v, but got %v", expectedURL, nextURL)
+		}
+	})
+
+	t.Run("NextURLNil", func(t *testing.T) {
+		p := &Page{
+			Pagination: Pagination{
+				Next: nil,
+			},
+		}
+
+		_, err := p.Next()
+
+		if err == nil {
+			t.Error("Expected an error, but got nil")
+		}
+
+		expectedError := "no next link found"
+		if err.Error() != expectedError {
+			t.Errorf("Expected error message '%s', but got '%s'", expectedError, err.Error())
+		}
+	})
+}

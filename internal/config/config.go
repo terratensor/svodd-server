@@ -27,6 +27,7 @@ type Parser struct {
 	Url         string         `yaml:"url"`
 	Previous    bool           `yaml:"previous" env-default:"false"`
 	Pages       int            `yaml:"pages,omitempty" env-default:"1"`
+	FetchAll    bool           `yaml:"fetch_all" env-default:"false"`
 	UserAgent   *string        `yaml:"user_agent,omitempty"`
 	Delay       *time.Duration `yaml:"delay,omitempty"`
 	RandomDelay *time.Duration `yaml:"random_delay,omitempty"`

@@ -2,7 +2,7 @@ package qavideopage
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -38,12 +38,9 @@ func New(body []byte) (*Page, error) {
 //
 // It takes in a pointer to an httpclient.HttpClient, a starting URL, and a maximum number of pages to fetch.
 // It returns a channel of type *Page, which will be populated with parsed Page structs.
-// The channel is buffered with the maximum number of pages.
 func FetchAndParsePages(client *httpclient.HttpClient, startURL url.URL, maxPages int) <-chan *Page {
 	pageChan := make(chan *Page, maxPages)
 	if maxPages <= 0 {
-		// todo code for all pages
-		log.Println("maxPages <= 0, setting maxPages to 1")
 		maxPages = 1
 	}
 
@@ -54,9 +51,49 @@ func FetchAndParsePages(client *httpclient.HttpClient, startURL url.URL, maxPage
 		for i := 0; i < maxPages; i++ {
 			resBytes, _ := client.Get(&currentURL)
 			page, _ := New(resBytes)
-
-			currentURL.RawQuery = page.Next().RawQuery
 			pageChan <- page
+
+			nextURL, err := page.Next()
+			if err != nil {
+				break
+			}
+
+			currentURL.RawQuery = nextURL.RawQuery
+			if page.Last() == nil {
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}()
+
+	return pageChan
+}
+
+// FetchAndParseAll fetches and parses all pages from a given URL using the provided HTTP client.
+//
+// It takes in a pointer to an httpclient.HttpClient and a starting URL. It returns a channel of type *Page,
+// which will be populated with parsed Page structs.
+func FetchAndParseAll(client *httpclient.HttpClient, startURL url.URL) <-chan *Page {
+	pageChan := make(chan *Page, 100)
+
+	go func() {
+		defer close(pageChan)
+
+		currentURL := startURL
+		for {
+			resBytes, _ := client.Get(&currentURL)
+			page, _ := New(resBytes)
+			pageChan <- page
+
+			nextURL, err := page.Next()
+			if err != nil {
+				break
+			}
+
+			currentURL.RawQuery = nextURL.RawQuery
+			if page.Last() == nil {
+				break
+			}
 			time.Sleep(500 * time.Millisecond)
 		}
 	}()
@@ -68,8 +105,11 @@ func (p *Page) Active() *url.URL {
 	return p.Pagination.Active
 }
 
-func (p *Page) Next() *url.URL {
-	return p.Pagination.Next
+func (p *Page) Next() (*url.URL, error) {
+	if condition := p.Pagination.Next == nil; condition {
+		return nil, fmt.Errorf("no next link found")
+	}
+	return p.Pagination.Next, nil
 }
 
 func (p *Page) Prev() *url.URL {
