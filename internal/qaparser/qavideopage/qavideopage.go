@@ -41,9 +41,10 @@ func New(body []byte) (*Page, error) {
 // The channel is buffered with the maximum number of pages.
 func FetchAndParsePages(client *httpclient.HttpClient, startURL url.URL, maxPages int) <-chan *Page {
 	pageChan := make(chan *Page, maxPages)
-	if maxPages == 0 {
+	if maxPages <= 0 {
 		// todo code for all pages
-		log.Println("maxPages = 0, fetching all pages")
+		log.Println("maxPages <= 0, setting maxPages to 1")
+		maxPages = 1
 	}
 
 	go func() {

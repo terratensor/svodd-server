@@ -38,7 +38,7 @@ type Parser struct {
 	RandomDelay time.Duration
 	UserAgent   string
 	Previous    bool
-	MaxPages    *int
+	MaxPages    int
 	Client      *httpclient.HttpClient
 }
 
@@ -61,8 +61,8 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 		userAgent = *cfg.UserAgent
 	}
 	maxPages := 1
-	if cfg.Pages == nil {
-		cfg.Pages = &maxPages
+	if cfg.Pages <= 0 {
+		cfg.Pages = maxPages
 	}
 	client := httpclient.New(&userAgent)
 	np := Parser{
@@ -93,7 +93,7 @@ func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 		log.Printf("Started parser for given URL: %v", p.Link)
 
 		go func() {
-			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.MaxPages) {
+			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
 				for _, entry := range page.ListQALinks() {
 					output <- entry
 				}
@@ -118,7 +118,7 @@ func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
 
 	go func() {
 		defer close(output)
-		for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.MaxPages) {
+		for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
 			for _, entry := range page.ListQALinks() {
 				output <- entry
 			}
