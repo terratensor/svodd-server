@@ -77,11 +77,11 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 	return &np
 }
 
-// Run is a method of the Parser struct that runs the parser.
+// RunBackground is a method of the Parser struct that runs the parser.
 //
 // It takes a channel of URLs and a WaitGroup as parameters.
 // It does not return anything.
-func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
+func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 	log.Printf("Starting parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link)
 
 	defer wg.Done()
@@ -108,4 +108,22 @@ func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
 		default:
 		}
 	}
+}
+
+func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
+
+	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link.String())
+	// chout := make(chan *url.URL, 20)
+	defer wg.Done()
+	// TODO: implement
+	
+	go func() {
+		defer close(output)
+		for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.MaxPages) {
+			for _, entry := range page.ListQALinks() {
+				// log.Printf("entry: %v", entry)
+				output <- entry
+			}
+		}
+	}()
 }

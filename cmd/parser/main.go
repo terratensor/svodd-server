@@ -1,58 +1,56 @@
 package main
 
 import (
+	"fmt"
 	"log"
-	"math/rand"
+	"net/url"
 	"sync"
 	"time"
 
+	"github.com/terratensor/svodd-server/internal/app"
 	"github.com/terratensor/svodd-server/internal/config"
+	"github.com/terratensor/svodd-server/internal/entities/answer"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
-	"github.com/terratensor/svodd-server/internal/qaparser/qavideopage"
+	"github.com/terratensor/svodd-server/internal/splitter"
+	"github.com/terratensor/svodd-server/internal/workerpool"
 )
 
 func main() {
 	cfg := config.MustLoad()
+
+	ch := make(chan *url.URL, cfg.EntryChanBuffer)
 
 	wg := &sync.WaitGroup{}
 	for _, parserCfg := range cfg.Parsers {
 
 		wg.Add(1)
 		parser := qavideo.NewParser(parserCfg, *cfg.Delay, *cfg.RandomDelay)
-		go Run(parser, wg)
+		go parser.Run(ch, wg)
 	}
+
+	var allTask []*workerpool.Task
+	sp := splitter.NewSplitter(cfg.Splitter.OptChunkSize, cfg.Splitter.MaxChunkSize)
+
+	// Создаем срез клиетнов мантикоры по количеству индексов в конфиге
+	var manticoreStorages []answer.Entries
+	for _, index := range cfg.ManticoreIndex {
+		manticoreStorages = append(manticoreStorages, *app.NewEntriesStorage(index.Name))
+	}
+
+	for page := range ch {
+		log.Printf("page: %v", page)
+		task := workerpool.NewTask(func(data interface{}) error {
+			taskID := data.(*url.URL)
+			time.Sleep(100 * time.Millisecond)
+			fmt.Printf("Task %v processed\n", taskID.String())
+			return nil
+		}, page, sp, &manticoreStorages)
+		allTask = append(allTask, task)
+	}
+
+	pool := workerpool.NewPool(allTask, cfg.Workers)
+	pool.Run()
+
 	wg.Wait()
-	log.Println("finished, all workers successfully stopped.")
-}
-
-func Run(p *qavideo.Parser, wg *sync.WaitGroup) {
-	log.Printf("*p.Link: %v", *p.Link)
-	log.Printf("p.Link: %v", p.Link)
-	log.Printf("&p.Link: %v", &p.Link)
-	defer wg.Done()
-	randomDelay := time.Duration(0)
-	if p.RandomDelay != 0 {
-		randomDelay = time.Duration(rand.Int63n(int64(p.RandomDelay)))
-	}
-	time.Sleep(p.Delay + randomDelay)
-
-	log.Printf("started parser for given url: %v", p.Link)
-	resBytes, _ := p.Client.Get(p.Link)
-	// log.Printf("res: %v, err: %v", res, err)
-	page, err := qavideopage.New(resBytes)
-	if err != nil {
-		log.Printf("failed to parse url %v, %v", p.Link, err)
-	}
-	log.Printf("link: %+v", page)
-	log.Printf("active link: %+v", page.Active())
-	log.Printf("last link: %+v", page.Last())
-	log.Printf("first link: %+v", page.First())
-	log.Printf("prev link: %+v", page.Prev())
-	log.Printf("next link: %+v", page.Next())
-	log.Printf("first qa link: %+v", page.FirstQALink())
-	log.Printf("list of qa links: %+v", page.ListQALinks())
-	if err != nil {
-		log.Printf("failed to parse url %v, %v", p.Link, err)
-	}
-	log.Printf("fetched the contents of a given url %v", p.Link)
+	log.Println("finished, all tasks successfully processed.")
 }

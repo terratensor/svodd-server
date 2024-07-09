@@ -38,11 +38,11 @@ func NewTask(f func(interface{}) error, data *url.URL, splitter *splitter.Splitt
 func process(workerID int, task *Task) {
 	fmt.Printf("Worker %d processes task %v\n", workerID, task.Data)
 
-	logger := slog.New(
+	slog.New(
 		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 
-	log.Println(logger)
+	log.Println(task.Data)
 	// store := task.EntriesStorage
 
 	task.Err = task.f(task.Data)

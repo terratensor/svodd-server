@@ -23,7 +23,7 @@ func main() {
 
 		wg.Add(1)
 		parser := qavideo.NewParser(parserCfg, *cfg.Delay, *cfg.RandomDelay)
-		go parser.Run(ch, wg)
+		go parser.RunBackground(ch, wg)
 	}
 
 	var allTask []*workerpool.Task
