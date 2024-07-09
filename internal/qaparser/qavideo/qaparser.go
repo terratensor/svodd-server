@@ -115,13 +115,11 @@ func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
 	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link.String())
 	// chout := make(chan *url.URL, 20)
 	defer wg.Done()
-	// TODO: implement
-	
+
 	go func() {
 		defer close(output)
 		for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, *p.MaxPages) {
 			for _, entry := range page.ListQALinks() {
-				// log.Printf("entry: %v", entry)
 				output <- entry
 			}
 		}

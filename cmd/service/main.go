@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/terratensor/svodd-server/internal/app"
 	"github.com/terratensor/svodd-server/internal/config"
@@ -42,6 +43,7 @@ func main() {
 				if cfg.Env != "prod" {
 					return nil
 				}
+				time.Sleep(100 * time.Millisecond)
 				// e := data.(answer.Entry)
 				return nil
 			}, <-ch, sp, &manticoreStorages)

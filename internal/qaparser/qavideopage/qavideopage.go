@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"log"
 	"net/url"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/terratensor/svodd-server/internal/lib/httpclient"
@@ -55,6 +56,7 @@ func FetchAndParsePages(client *httpclient.HttpClient, startURL url.URL, maxPage
 
 			currentURL.RawQuery = page.Next().RawQuery
 			pageChan <- page
+			time.Sleep(500 * time.Millisecond)
 		}
 	}()
 
