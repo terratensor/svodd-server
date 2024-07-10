@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/url"
 	"sync"
@@ -10,7 +9,9 @@ import (
 	"github.com/terratensor/svodd-server/internal/app"
 	"github.com/terratensor/svodd-server/internal/config"
 	"github.com/terratensor/svodd-server/internal/entities/answer"
+	"github.com/terratensor/svodd-server/internal/lib/httpclient"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
+	"github.com/terratensor/svodd-server/internal/qaparser/questionanswer"
 	"github.com/terratensor/svodd-server/internal/splitter"
 	"github.com/terratensor/svodd-server/internal/workerpool"
 )
@@ -42,9 +43,15 @@ func main() {
 		task := workerpool.NewTask(func(data interface{}) error {
 			taskID := data.(*url.URL)
 			time.Sleep(100 * time.Millisecond)
-			fmt.Printf("Task %v processed\n", taskID.String())
-			return nil
+			log.Printf("Task %v processed\n", taskID.String())
+
+			entry := questionanswer.NewEntry(taskID)
+			client := httpclient.New(nil)
+			return entry.FetchData(client)
+
 		}, page, sp, &manticoreStorages)
+
+		log.Printf("task: %v", task)
 		allTask = append(allTask, task)
 	}
 
