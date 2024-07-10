@@ -2,6 +2,7 @@ package questionanswer
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"net/url"
 	"strings"
@@ -54,6 +55,8 @@ func (entry *Entry) FetchData(client *httpclient.HttpClient) error {
 	if err != nil {
 		return err
 	}
+
+	entry.SplitIntoChunks()
 
 	return nil
 }
@@ -118,4 +121,20 @@ func parseAvatarFile(avatarFile string) *url.URL {
 		log.Printf("failed to parse avatar url: %v", err)
 	}
 	return u
+}
+
+func (e *Entry) SplitIntoChunks() {
+	moderator := "Ведущий:"
+	responsible := "Валерий Викторович Пякин:"
+	for _, c := range e.Content {
+		index := strings.Index(c.Text, moderator)
+		if index == 0 {
+			fmt.Printf("Substring '%s' found at index %d\n", moderator, index)
+		}
+
+		index = strings.Index(c.Text, responsible)
+		if index == 0 {
+			fmt.Printf("Substring '%s' found at index %d\n", responsible, index)
+		}
+	}
 }
