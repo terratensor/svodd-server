@@ -171,6 +171,7 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 			}
 
 			// Мы добавляем текст в массив вопроса.
+			text = WrapPhrase(moderator, text)
 			question = append(question, text)
 			isQuestion = true
 			isAnswer = false
@@ -178,6 +179,9 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 
 		// Если нашелся текст "Валерий Викторович Пякин:", то мы начинаем новый ответ.
 		if responsibleIndex == 0 {
+			for _, resp := range responsible {
+				text = WrapPhrase(resp, text)
+			}
 			// Мы добавляем текст в массив ответа.
 			answer = append(answer, text)
 			isAnswer = true
@@ -250,4 +254,18 @@ func chekResponsibleIndex(text string, responsible []string) int {
 		}
 	}
 	return -1
+}
+
+// WrapPhrase wraps a specific phrase in a text with a strong tag.
+func WrapPhrase(phrase, text string) string {
+	index := strings.Index(text, phrase)
+	if index == -1 {
+		return text
+	}
+
+	prefix := text[:index]
+	suffix := text[index+len(phrase):]
+	wrapped := fmt.Sprintf("%v<strong>%v</strong>%v", prefix, phrase, suffix)
+
+	return wrapped
 }
