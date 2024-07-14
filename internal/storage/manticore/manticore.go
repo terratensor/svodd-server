@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -23,18 +24,18 @@ type Response struct {
 		Total         int    `json:"total"`
 		TotalRelation string `json:"total_relation"`
 		Hits          []struct {
-			Id     string `json:"_id"`
-			Score  int    `json:"_score"`
+			Id     int64 `json:"_id"`
+			Score  int   `json:"_score"`
 			Source struct {
 				Username   string `json:"username"`
 				Text       string `json:"text"`
-				Url        string `json:"url"`
 				AvatarFile string `json:"avatar_file"`
+				Url        string `json:"url"`
 				Role       string `json:"role"`
 				Datetime   int64  `json:"datetime"`
-				DataID     string `json:"data_id"`
-				ParentID   string `json:"parent_id"`
-				Type       string `json:"type"`
+				DataID     int    `json:"data_id"`
+				ParentID   int    `json:"parent_id"`
+				Type       int    `json:"type"`
 				Position   int    `json:"position"`
 			} `json:"_source"`
 		} `json:"hits"`
@@ -64,8 +65,8 @@ func New(tbl string) (*Client, error) {
 	configuration := openapiclient.NewConfiguration()
 	configuration.Servers = openapiclient.ServerConfigurations{
 		{
-			URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
-			// URL:         "http://localhost:9308",
+			// URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
+			URL:         "http://localhost:9308",
 			Description: "Default Manticore Search HTTP",
 		},
 	}
@@ -168,9 +169,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 	// response from `Search`: SearchRequest
 	searchRequest := *openapiclient.NewSearchRequest(c.Index)
 
-	log.Printf("url2222222222222222222: %v\n", url)
-	log.Printf("index: %v\n", c.Index)
-
 	filter := map[string]interface{}{"url": url}
 	query := map[string]interface{}{"equals": filter}
 	limit := 1000
@@ -179,7 +177,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 	searchRequest.SetQuery(query)
 	searchRequest.SetLimit(int32(limit))
 	searchRequest.SetSort(sort)
-	log.Printf("query %v\n", searchRequest)
 
 	resp, r, err := c.apiClient.SearchAPI.Search(ctx).SearchRequest(searchRequest).Execute()
 
@@ -188,22 +185,30 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 		return nil, fmt.Errorf("error when calling `SearchAPI.Search.Equals``: %v", err)
 	}
 
-	var hits []map[string]interface{}
-	var _id interface{}
+	res := &Response{}
+	respBody, _ := io.ReadAll(r.Body)
+	err = json.Unmarshal(respBody, res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse JSON: %v", resp)
+	}
+	// log.Printf("resp: %+v\n err: %v", res, err)
 
-	hits = resp.Hits.Hits
+	// var hits []map[string]interface{}
+	// var _id interface{}
+
+	hits := res.Hits.Hits
 
 	var entries []answer.Entry
 	for _, hit := range hits {
 
-		_id = hit["_id"]
-		id, err := strconv.ParseInt(_id.(string), 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse ID to int64: %v", resp)
-		}
+		id := hit.Id
+		// id, err := strconv.ParseInt(_id.(string), 10, 64)
+		// if err != nil {
+		// 	return nil, fmt.Errorf("failed to parse ID to int64: %v", resp)
+		// }
 
 		// создаем entry из hit
-		sr := hit["_source"]
+		sr := hit.Source
 		jsonData, err := json.Marshal(sr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse JSON: %v", resp)

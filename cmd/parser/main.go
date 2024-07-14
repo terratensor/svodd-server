@@ -95,7 +95,7 @@ func SavingEntry(entry *questionanswer.Entry, manticoreStorages *[]answer.Entrie
 				}
 			}
 		} else {
-			log.Printf("entry already exists: %v", dbe)
+			log.Printf("entry already exists")
 		}
 		// log.Printf("storage key: %v, dbe: %+v, entry: %+v", key, dbe, entry)
 
