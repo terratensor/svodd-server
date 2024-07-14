@@ -7,23 +7,30 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/terratensor/svodd-server/internal/lib/httpclient"
 )
 
 type Entry struct {
-	Url      *url.URL
-	Title    string
-	Video    *url.URL
-	Datetime *time.Time
-	Content  []QuestionAnswer
-	Comments []Comment
+	Url       *url.URL
+	Title     string
+	Video     *url.URL
+	Datetime  *time.Time
+	Content   []QuestionAnswer
+	Fragments []Fragment
+	Comments  []Comment
+}
+
+type Fragment struct {
+	QuestionAnswer string
+	Chunk          int
 }
 
 type QuestionAnswer struct {
-	Text  string
-	Chunk int
+	Question []string
+	Answer   []string
 }
 
 type Comment struct {
@@ -56,7 +63,7 @@ func (entry *Entry) FetchData(client *httpclient.HttpClient) error {
 		return err
 	}
 
-	entry.SplitIntoChunks()
+	// entry.SplitIntoChunks()
 
 	return nil
 }
@@ -86,9 +93,17 @@ func (e *Entry) Parse(resBytes []byte) error {
 	}
 
 	els := doc.Find("#answer-content").First()
-	els.Find("p").Each(func(i int, s *goquery.Selection) {
-		e.Content = append(e.Content, QuestionAnswer{Text: strings.TrimSpace(s.Text())})
-	})
+	e.SplitIntoChunks(els)
+
+	e.Fragments = splitAnswers(e.Content)
+	for _, f := range e.Fragments {
+		log.Printf("fragment: %+v \n\n\n", f)
+	}
+	// for i, qa := range e.Content {
+	// 	for _, ans := range qa.Answer {
+	// 		log.Printf("fragment %v: %+v \n\n\n", i, ans)
+	// 	}
+	// }
 
 	els = doc.Find(".comment-list").First()
 	els.Find(".comment-item").Each(func(i int, s *goquery.Selection) {
@@ -103,7 +118,7 @@ func (e *Entry) Parse(resBytes []byte) error {
 			Position:   i + 1,
 		})
 	})
-	log.Printf("entry: %v", e)
+	// log.Printf("entry: %v", e)
 	return nil
 }
 
@@ -123,18 +138,114 @@ func parseAvatarFile(avatarFile string) *url.URL {
 	return u
 }
 
-func (e *Entry) SplitIntoChunks() {
+// SplitIntoChunks разбивает текст на вопросы и ответы.
+// Он основан на поиске конкретных строк в тексте.
+// Если нашелся текст "Ведущий:", то он начинает добавлять текст в массив вопросов.
+// Если нашелся текст "Валерий Викторович Пякин:", то он начинает добавлять текст в массив ответов.
+// Если нашелся текст "Ведущий:" или "Валерий Викторович Пякин:" в середине массива текста,
+// то он создает новый QuestionAnswer, добавляет его в массив Content и начинает новый цикл.
+func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
+	// "Ведущий:" - это текст, который говорит, что начинается новый вопрос.
 	moderator := "Ведущий:"
+	// "Валерий Викторович Пякин:" - это текст, который говорит, что начинается новый ответ.
 	responsible := "Валерий Викторович Пякин:"
-	for _, c := range e.Content {
-		index := strings.Index(c.Text, moderator)
-		if index == 0 {
-			fmt.Printf("Substring '%s' found at index %d\n", moderator, index)
+
+	// isQuestion - это флаг, который говорит, что мы находимся в вопросе.
+	isQuestion := false
+	// isAnswer - это флаг, который говорит, что мы находимся в ответе.
+	isAnswer := false
+
+	// questionAnswer - это массив, который содержит вопросы и ответы.
+	var questionAnswer []QuestionAnswer
+	// question - это массив, который содержит текст вопроса.
+	var question []string
+	// answer - это массив, который содержит текст ответа.
+	var answer []string
+
+	// Мы идем по всем абзацам текста.
+	els.Find("p").Each(func(i int, s *goquery.Selection) {
+		text := strings.TrimSpace(s.Text())
+
+		// Мы ищем текст "Ведущий:".
+		moderatorIndex := strings.Index(text, moderator)
+		// Мы ищем текст "Валерий Викторович Пякин:".
+		responsibleIndex := strings.Index(text, responsible)
+
+		// Если нашелся текст "Ведущий:", то мы начинаем новый вопрос.
+		if moderatorIndex == 0 {
+			// Если у нас уже есть вопрос и ответ, то мы создаем новый QuestionAnswer.
+			if len(question) > 0 && len(answer) > 0 {
+				questionAnswer = append(questionAnswer, QuestionAnswer{Question: question, Answer: answer})
+				question = nil
+				answer = nil
+			}
+
+			// Мы добавляем текст в массив вопроса.
+			question = append(question, text)
+			isQuestion = true
+			isAnswer = false
 		}
 
-		index = strings.Index(c.Text, responsible)
-		if index == 0 {
-			fmt.Printf("Substring '%s' found at index %d\n", responsible, index)
+		// Если нашелся текст "Валерий Викторович Пякин:", то мы начинаем новый ответ.
+		if responsibleIndex == 0 {
+			// Мы добавляем текст в массив ответа.
+			answer = append(answer, text)
+			isAnswer = true
+			isQuestion = false
+		}
+
+		// Если у нас есть текст "Ведущий:", то мы добавляем его в массив вопроса.
+		if moderatorIndex != 0 && isQuestion {
+			question = append(question, text)
+		}
+		// Если у нас есть текст "Валерий Викторович Пякин:", то мы добавляем его в массив ответа.
+		if responsibleIndex != 0 && isAnswer {
+			answer = append(answer, text)
+		}
+	})
+
+	// Если у нас есть вопрос и ответ, то мы создаем новый QuestionAnswer.
+	if len(question) > 0 && len(answer) > 0 {
+		questionAnswer = append(questionAnswer, QuestionAnswer{Question: question, Answer: answer})
+		question = nil
+		answer = nil
+	}
+
+	e.Content = questionAnswer
+}
+
+func splitAnswers(content []QuestionAnswer) []Fragment {
+
+	var result []Fragment
+	for _, qa := range content {
+
+		isNewFragment := true
+		chunk := 1
+		fragment := Fragment{QuestionAnswer: "", Chunk: chunk}
+
+		for _, ans := range qa.Answer {
+
+			if isNewFragment {
+				for _, q := range qa.Question {
+					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"question\">%v</p>", q)
+				}
+				isNewFragment = false
+			}
+
+			fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
+
+			if (utf8.RuneCountInString(fragment.QuestionAnswer)) > 2700 {
+				result = append(result, fragment)
+				chunk++
+				fragment = Fragment{QuestionAnswer: "", Chunk: chunk}
+				isNewFragment = true
+			}
+		}
+
+		if utf8.RuneCountInString(fragment.QuestionAnswer) > 0 {
+			result = append(result, fragment)
 		}
 	}
+
+	return result
 }
