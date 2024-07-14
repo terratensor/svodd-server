@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math/big"
 	"os"
 	"strconv"
 	"time"
@@ -65,8 +64,8 @@ func New(tbl string) (*Client, error) {
 	configuration := openapiclient.NewConfiguration()
 	configuration.Servers = openapiclient.ServerConfigurations{
 		{
-			// URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
-			URL:         "http://localhost:9308",
+			URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
+			// URL:         "http://localhost:9308",
 			Description: "Default Manticore Search HTTP",
 		},
 	}
@@ -196,19 +195,9 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 
 	var entries []answer.Entry
 	for _, hit := range hits {
-		log.Printf("Found %v hits\n", hit)
 
 		_id = hit["_id"]
-		log.Printf("id: %+v\n", _id)
-		_id = hit["_id"]
-		// _idStr := fmt.Sprintf("%f", _id)
-		// id, err := strconv.ParseInt(_idStr, 10, 64)
-
-		bigId := new(big.Float).SetFloat64(_id.(float64))
-		id, _ := bigId.Int64()
-		log.Printf("id2222222222222222222222222222222: %v\n", id)
-		// id, err := strconv.ParseUint(_id.(string), 10, 64)
-		// id := int64(_id.(float64))
+		id, err := strconv.ParseInt(_id.(string), 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse ID to int64: %v", resp)
 		}
