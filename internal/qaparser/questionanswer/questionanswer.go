@@ -63,7 +63,7 @@ func (entry *Entry) FetchData(client *httpclient.HttpClient) error {
 		return err
 	}
 
-	// entry.SplitIntoChunks()
+	entry.splitAnswers()
 
 	return nil
 }
@@ -94,16 +94,6 @@ func (e *Entry) Parse(resBytes []byte) error {
 
 	els := doc.Find("#answer-content").First()
 	e.SplitIntoChunks(els)
-
-	e.Fragments = splitAnswers(e.Content)
-	for _, f := range e.Fragments {
-		log.Printf("fragment: %+v \n\n\n", f)
-	}
-	// for i, qa := range e.Content {
-	// 	for _, ans := range qa.Answer {
-	// 		log.Printf("fragment %v: %+v \n\n\n", i, ans)
-	// 	}
-	// }
 
 	els = doc.Find(".comment-list").First()
 	els.Find(".comment-item").Each(func(i int, s *goquery.Selection) {
@@ -214,10 +204,10 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 	e.Content = questionAnswer
 }
 
-func splitAnswers(content []QuestionAnswer) []Fragment {
+func (e *Entry) splitAnswers() {
 
 	var result []Fragment
-	for _, qa := range content {
+	for _, qa := range e.Content {
 
 		isNewFragment := true
 		chunk := 1
@@ -227,6 +217,9 @@ func splitAnswers(content []QuestionAnswer) []Fragment {
 
 			if isNewFragment {
 				for _, q := range qa.Question {
+					if strings.TrimSpace(q) == "" {
+						continue
+					}
 					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"question\">%v</p>", q)
 				}
 				isNewFragment = false
@@ -247,7 +240,7 @@ func splitAnswers(content []QuestionAnswer) []Fragment {
 		}
 	}
 
-	return result
+	e.Fragments = result
 }
 
 func chekResponsibleIndex(text string, responsible []string) int {

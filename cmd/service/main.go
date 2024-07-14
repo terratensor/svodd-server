@@ -10,7 +10,6 @@ import (
 	"github.com/terratensor/svodd-server/internal/config"
 	"github.com/terratensor/svodd-server/internal/entities/answer"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
-	"github.com/terratensor/svodd-server/internal/splitter"
 	"github.com/terratensor/svodd-server/internal/workerpool"
 )
 
@@ -29,7 +28,6 @@ func main() {
 
 	var allTask []*workerpool.Task
 	pool := workerpool.NewPool(allTask, cfg.Workers)
-	sp := splitter.NewSplitter(cfg.Splitter.OptChunkSize, cfg.Splitter.MaxChunkSize)
 
 	// Создаем срез клиетнов мантикоры по количеству индексов в конфиге
 	var manticoreStorages []answer.Entries
@@ -46,7 +44,7 @@ func main() {
 				time.Sleep(100 * time.Millisecond)
 				// e := data.(answer.Entry)
 				return nil
-			}, <-ch, sp, &manticoreStorages)
+			}, <-ch, &manticoreStorages)
 			pool.AddTask(task)
 		}
 	}()
