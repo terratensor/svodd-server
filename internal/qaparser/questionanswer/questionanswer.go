@@ -148,7 +148,7 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 	// "Ведущий:" - это текст, который говорит, что начинается новый вопрос.
 	moderator := "Ведущий:"
 	// "Валерий Викторович Пякин:" - это текст, который говорит, что начинается новый ответ.
-	responsible := "Валерий Викторович Пякин:"
+	responsible := []string{"Валерий Викторович Пякин:", "Валерий Викторович:"}
 
 	// isQuestion - это флаг, который говорит, что мы находимся в вопросе.
 	isQuestion := false
@@ -169,7 +169,7 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 		// Мы ищем текст "Ведущий:".
 		moderatorIndex := strings.Index(text, moderator)
 		// Мы ищем текст "Валерий Викторович Пякин:".
-		responsibleIndex := strings.Index(text, responsible)
+		responsibleIndex := chekResponsibleIndex(text, responsible)
 
 		// Если нашелся текст "Ведущий:", то мы начинаем новый вопрос.
 		if moderatorIndex == 0 {
@@ -248,4 +248,13 @@ func splitAnswers(content []QuestionAnswer) []Fragment {
 	}
 
 	return result
+}
+
+func chekResponsibleIndex(text string, responsible []string) int {
+	for _, r := range responsible {
+		if strings.Index(text, r) == 0 {
+			return 0
+		}
+	}
+	return -1
 }
