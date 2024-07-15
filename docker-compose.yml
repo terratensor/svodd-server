@@ -1,0 +1,64 @@
+version: "3.9"
+services:
+
+  registry:
+    image: registry:2
+    container_name: svodd-server-registry
+    ports:
+      - "5003:5003"
+    restart: always
+    networks:
+      - svodd-network
+
+  service:
+    image: ${REGISTRY:-localhost:5002}/svodd-server-service:main-1
+    build:
+      context: .
+      dockerfile: ./docker/service/Dockerfile
+    restart: always
+    depends_on:
+      - registry
+    networks:
+      - svodd-network
+    volumes:
+      - config:/app/config
+    environment:
+      CONFIG_PATH: './config/local.yaml'
+      MANTICORE_HOST: 'manticore'
+    command: './svodd-server-service'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+  parser:
+    image: ${REGISTRY:-localhost:5002}/svodd-server-parser:main-1
+    build:
+      context: .
+      dockerfile: ./docker/parser/Dockerfile
+    restart: always
+    depends_on:
+      - registry
+    networks:
+      - svodd-network
+    volumes:
+      - config:/app/config
+    environment:
+      CONFIG_PATH: './config/parser/local.yaml'
+      MANTICORE_HOST: 'manticore'
+    command: './svodd-server-parser'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  config:
+
+
+networks:
+  traefik-public:
+    external: true
+  svodd-network:
+    name: svodd-network
+    external: true

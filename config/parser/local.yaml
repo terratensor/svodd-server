@@ -1,0 +1,16 @@
+env: "local" # Окружение - local, dev или prod
+workers: 1
+delay: 2s
+random_delay: 0s
+manticore:
+  - index: questions
+  - index: questions_ext
+entry_chan_buffer: 20
+splitter:
+  opt_chunk_size: 1800 # оптимальный размер фрагмента контента для поиска, на эти фрагменты будет разбит контент
+  max_chunk_size: 3600 # максимальный размер фрагмента контента для поиска
+parsers:
+  - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
+    current: false
+    pages: 1
+    fetch_all: false
