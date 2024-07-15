@@ -11,6 +11,6 @@ splitter:
   max_chunk_size: 3600 # максимальный размер фрагмента контента для поиска
 parsers:
   - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
-    current: flase
+    current: false
     pages: 1
     fetch_all: false
