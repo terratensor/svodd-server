@@ -25,6 +25,7 @@ type Index struct {
 
 type Parser struct {
 	Url         string         `yaml:"url"`
+	Current     bool           `yaml:"current" env-default:"true"`
 	Previous    bool           `yaml:"previous" env-default:"false"`
 	Pages       int            `yaml:"pages,omitempty" env-default:"1"`
 	FetchAll    bool           `yaml:"fetch_all" env-default:"false"`

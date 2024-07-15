@@ -65,8 +65,8 @@ func New(tbl string) (*Client, error) {
 	configuration := openapiclient.NewConfiguration()
 	configuration.Servers = openapiclient.ServerConfigurations{
 		{
-			// URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
-			URL:         "http://localhost:9308",
+			URL: "http://manticore:9308", // Здесь должна быть переменная окружения manticore host:port
+			// URL:         "http://localhost:9308",
 			Description: "Default Manticore Search HTTP",
 		},
 	}

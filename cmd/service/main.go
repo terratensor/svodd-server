@@ -8,13 +8,16 @@ import (
 
 	"github.com/terratensor/svodd-server/internal/app"
 	"github.com/terratensor/svodd-server/internal/config"
-	"github.com/terratensor/svodd-server/internal/entities/answer"
+	"github.com/terratensor/svodd-server/internal/lib/httpclient"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
+	"github.com/terratensor/svodd-server/internal/qaparser/questionanswer"
 	"github.com/terratensor/svodd-server/internal/workerpool"
 )
 
 func main() {
 	cfg := config.MustLoad()
+
+	app := app.NewApp(cfg)
 
 	ch := make(chan *url.URL, cfg.EntryChanBuffer)
 
@@ -29,21 +32,22 @@ func main() {
 	var allTask []*workerpool.Task
 	pool := workerpool.NewPool(allTask, cfg.Workers)
 
-	// Создаем срез клиетнов мантикоры по количеству индексов в конфиге
-	var manticoreStorages []answer.Entries
-	for _, index := range cfg.ManticoreIndex {
-		manticoreStorages = append(manticoreStorages, *app.NewEntriesStorage(index.Name))
-	}
-
 	go func() {
 		for {
 			task := workerpool.NewTask(func(data interface{}) error {
-				if cfg.Env != "prod" {
-					return nil
-				}
+				taskID := data.(*url.URL)
 				time.Sleep(100 * time.Millisecond)
-				// e := data.(answer.Entry)
-				return nil
+				log.Printf("Task %v processed\n", taskID.String())
+
+				entry := questionanswer.NewEntry(taskID)
+
+				client := httpclient.New(nil)
+				err := entry.FetchData(client)
+				if err != nil {
+					return err
+				}
+
+				return app.Process(entry)
 			}, <-ch)
 			pool.AddTask(task)
 		}

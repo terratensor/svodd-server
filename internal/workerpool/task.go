@@ -15,15 +15,12 @@ type Task struct {
 	Err  error
 	Data *url.URL
 	f    func(interface{}) error
-	// ManticoreStorages *[]answer.Entries
-	// PsqlStorage       *answer.Entries
 }
 
 func NewTask(f func(interface{}) error, data *url.URL) *Task {
 	return &Task{
 		f:    f,
 		Data: data,
-		// ManticoreStorages: storages,
 	}
 }
 

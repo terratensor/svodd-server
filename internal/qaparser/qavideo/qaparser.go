@@ -37,6 +37,7 @@ type Parser struct {
 	Delay       time.Duration
 	RandomDelay time.Duration
 	UserAgent   string
+	Current     bool
 	Previous    bool
 	MaxPages    int
 	FetchAll    bool
@@ -71,6 +72,7 @@ func NewParser(cfg config.Parser, delay, randomDelay time.Duration) *Parser {
 		Delay:       delay,
 		RandomDelay: randomDelay,
 		UserAgent:   userAgent,
+		Current:     cfg.Current,
 		Previous:    cfg.Previous,
 		MaxPages:    cfg.Pages,
 		FetchAll:    cfg.FetchAll,
@@ -97,8 +99,12 @@ func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 		if !p.FetchAll {
 			go func() {
 				for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
-					for _, entry := range page.ListQALinks() {
-						output <- entry
+					if p.Current {
+						output <- page.FirstQALink()
+					} else {
+						for _, entry := range page.ListQALinks() {
+							output <- entry
+						}
 					}
 				}
 			}()
@@ -129,14 +135,18 @@ func (p *Parser) RunBackground(output chan *url.URL, wg *sync.WaitGroup) {
 func (p *Parser) Run(output chan *url.URL, wg *sync.WaitGroup) {
 
 	log.Printf("🚩 run parser: delay: %v, random delay: %v, url: %v", p.Delay, p.RandomDelay, p.Link.String())
-	// chout := make(chan *url.URL, 20)
+
 	defer wg.Done()
 	if !p.FetchAll {
 		go func() {
 			defer close(output)
 			for page := range qavideopage.FetchAndParsePages(p.Client, *p.Link, p.MaxPages) {
-				for _, entry := range page.ListQALinks() {
-					output <- entry
+				if p.Current {
+					output <- page.FirstQALink()
+				} else {
+					for _, entry := range page.ListQALinks() {
+						output <- entry
+					}
 				}
 			}
 		}()
