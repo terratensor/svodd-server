@@ -1,7 +1,7 @@
-env: "local" # Окружение - local, dev или prod
-workers: 2
-delay: 60s
-random_delay: 150s
+env: "prod" # Окружение - local, dev или prod
+workers: 1
+delay: 2s
+random_delay: 0s
 manticore:
   - index: questions
   - index: questions_ext
@@ -11,8 +11,6 @@ splitter:
   max_chunk_size: 3600 # максимальный размер фрагмента контента для поиска
 parsers:
   - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
-    delay: 3600s
-    random_delay: 600s
-    previous: false
-    current: true
+    current: false
     pages: 1
+    fetch_all: false
