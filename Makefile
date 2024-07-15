@@ -28,19 +28,25 @@ docker-build:
 dev-docker-build:
 	REGISTRY=localhost IMAGE_TAG=main-1 make docker-build
 
-docker-build: docker-build-service
+docker-build: docker-build-service docker-build-parser
 
 docker-build-service:
 	DOCKER_BUILDKIT=1 docker --log-level=debug build --pull --build-arg BUILDKIT_INLINE_CACHE=1 \
     	--tag ${REGISTRY}/svodd-server-service:${IMAGE_TAG} \
-    	--file ./docker/Dockerfile_service .
+    	--file ./docker/service/Dockerfile .
+
+docker-build-parser:
+	DOCKER_BUILDKIT=1 docker --log-level=debug build --pull --build-arg BUILDKIT_INLINE_CACHE=1 \
+    	--tag ${REGISTRY}/svodd-server-parser:${IMAGE_TAG} \
+    	--file ./docker/parser/Dockerfile .
 
 push:
 	docker push ${REGISTRY}/svodd-server-service:${IMAGE_TAG}
+	docker push ${REGISTRY}/svodd-server-parser:${IMAGE_TAG}
 
 deploy:
 	ssh -o StrictHostKeyChecking=no deploy@${HOST} -p ${PORT} 'docker network create --driver=overlay traefik-public || true'
-	ssh -o StrictHostKeyChecking=no deploy@${HOST} -p ${PORT} 'docker network create --driver=overlay svodd-server-net || true'
+	ssh -o StrictHostKeyChecking=no deploy@${HOST} -p ${PORT} 'docker network create --driver=overlay svodd-network || true'
 	ssh -o StrictHostKeyChecking=no deploy@${HOST} -p ${PORT} 'rm -rf svodd-server-service_${BUILD_NUMBER} && mkdir svodd-server-service_${BUILD_NUMBER}'
 
 	envsubst < docker-compose-production.yml > docker-compose-production-env.yml

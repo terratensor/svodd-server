@@ -41,3 +41,31 @@ jobs:
 
       - name: Test
         run: go test -v ./...
+      
+      - name: Inject branch slug
+        uses: rlespinasse/github-slug-action@v3.x
+
+      - name: Set image tag
+        run: echo "::set-env name=IMAGE_TAG::${{ env.GITHUB_REF_SLUG }}-${GITHUB_RUN_NUMBER}"
+
+      - name: Build
+        run: make docker-build
+
+      - name: Push
+        run: make push
+        if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.PRODUCTION_KEY }}
+          known_hosts: ${{ secrets.PRODUCTION_HOST }}
+        if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Deploy
+        run: make deploy
+        env:
+          BUILD_NUMBER: ${GITHUB_RUN_NUMBER}
+          HOST: ${{ secrets.PRODUCTION_HOST }}
+          PORT: ${{ secrets.PRODUCTION_PORT }}
+        if: ${{ github.ref == 'refs/heads/main' }}
