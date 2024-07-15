@@ -15,7 +15,6 @@ import (
 	"github.com/terratensor/svodd-server/internal/config"
 	"github.com/terratensor/svodd-server/internal/entities/answer"
 	"github.com/terratensor/svodd-server/internal/lib/httpclient"
-	"github.com/terratensor/svodd-server/internal/lib/logger/sl"
 	"github.com/terratensor/svodd-server/internal/qaparser/qavideo"
 	"github.com/terratensor/svodd-server/internal/qaparser/questionanswer"
 	"github.com/terratensor/svodd-server/internal/workerpool"
@@ -50,17 +49,19 @@ func main() {
 			log.Printf("Task %v processed\n", taskID.String())
 
 			entry := questionanswer.NewEntry(taskID)
+
 			client := httpclient.New(nil)
 			err := entry.FetchData(client)
+			if err != nil {
+				return err
+			}
 
 			err = SavingEntry(entry, &manticoreStorages)
 
-			// log.Printf("task: %v, entry: %v", taskID.String(), entry)
 			return err
 
 		}, page, &manticoreStorages)
 
-		// log.Printf("task: %v", task)
 		allTask = append(allTask, task)
 	}
 
@@ -76,11 +77,12 @@ func SavingEntry(entry *questionanswer.Entry, manticoreStorages *[]answer.Entrie
 		slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 	)
 
+	answerEntries := *MakeAnswerEntries(entry)
+
 	for _, storage := range *manticoreStorages {
 
 		store := storage
 
-		// log.Printf("Entry.URL: %v, store: %v", entry.Url, store)
 		dbe, err := store.Storage.FindAllByUrl(context.Background(), entry.Url.String())
 		if err != nil {
 			log.Fatalf("failed to find by url: %v", err)
@@ -88,36 +90,30 @@ func SavingEntry(entry *questionanswer.Entry, manticoreStorages *[]answer.Entrie
 
 		if dbe == nil || len(*dbe) == 0 {
 
-			for _, e := range *MakeAnswerEntries(entry) {
-				err = insertNewEntry(&e, store.Storage, *logger)
+			for _, e := range answerEntries {
+				err = store.Insert(&e, logger)
 				if err != nil {
 					log.Fatalf("failed to insert new entry: %v", err)
 				}
 			}
 		} else {
 			log.Printf("entry already exists")
+			for n, e := range answerEntries {
+				if n < len(*dbe) {
+					e.ID = (*dbe)[n].ID
+					err = store.Update(&e, logger)
+					if err != nil {
+						return err
+					}
+				} else {
+					err = store.Insert(&e, logger)
+					if err != nil {
+						return err
+					}
+				}
+			}
 		}
-		// log.Printf("storage key: %v, dbe: %+v, entry: %+v", key, dbe, entry)
-
 	}
-	return nil
-}
-
-func insertNewEntry(e *answer.Entry, store answer.StorageInterface, logger slog.Logger) error {
-	id, err := store.Insert(context.Background(), e)
-	if err != nil {
-		logger.Error(
-			"failed insert entry",
-			slog.String("url", e.Url),
-			sl.Err(err),
-		)
-		return err
-	}
-	logger.Info(
-		"entry successful inserted",
-		slog.Int64("id", *id),
-		slog.String("url", e.Url),
-	)
 	return nil
 }
 
@@ -125,6 +121,13 @@ const TypeAQTeaser = 4
 const TypeAQFragmnt = 5
 const TypeAQComment = 3
 
+// MakeAnswerEntries generates a slice of answer.Entry based on the given questionanswer.Entry.
+//
+// Parameters:
+// - entry: a pointer to a questionanswer.Entry struct representing the entry to generate answer entries from.
+//
+// Return:
+// - a pointer to a slice of answer.Entry representing the generated answer entries.
 func MakeAnswerEntries(entry *questionanswer.Entry) *[]answer.Entry {
 	var entries []answer.Entry
 	position := 1

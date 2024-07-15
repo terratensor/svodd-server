@@ -30,14 +30,7 @@ func NewTask(f func(interface{}) error, data *url.URL, storages *[]answer.Entrie
 }
 
 func process(workerID int, task *Task) {
+
 	fmt.Printf("Worker %d processes task %v\n", workerID, task.Data)
-
-	// slog.New(
-	// 	slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-	// )
-
-	// log.Println(task.Data)
-	// store := task.EntriesStorage
-
 	task.Err = task.f(task.Data)
 }

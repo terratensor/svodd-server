@@ -165,6 +165,51 @@ func (c *Client) Insert(ctx context.Context, entry *answer.Entry) (*int64, error
 	return resp.Id, nil
 }
 
+func (c *Client) Update(ctx context.Context, entry *answer.Entry) error {
+
+	dbe := &DBEntry{
+		Username:   entry.Username,
+		Text:       entry.Text,
+		Url:        entry.Url,
+		AvatarFile: entry.AvatarFile,
+		Role:       entry.Role,
+		Datetime:   castTime(entry.Datetime),
+		DataID:     entry.DataID,
+		ParentID:   entry.ParentID,
+		Type:       entry.Type,
+		Position:   entry.Position,
+	}
+
+	//marshal into JSON buffer
+	buffer, err := json.Marshal(dbe)
+	if err != nil {
+		return fmt.Errorf("error marshaling JSON: %v", err)
+	}
+
+	var doc map[string]interface{}
+	err = json.Unmarshal(buffer, &doc)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling buffer: %v", err)
+	}
+
+	idr := openapiclient.InsertDocumentRequest{
+		Index: c.Index,
+		Id:    entry.ID,
+		Doc:   doc,
+	}
+
+	_, r, err := c.apiClient.IndexAPI.Replace(ctx).InsertDocumentRequest(idr).Execute()
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
+		return fmt.Errorf("error when calling `IndexAPI.Replace``: %v", err)
+	}
+
+	log.Printf("Success `IndexAPI.Replace`: %v", r)
+
+	return nil
+}
+
 func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry, error) {
 	// response from `Search`: SearchRequest
 	searchRequest := *openapiclient.NewSearchRequest(c.Index)
