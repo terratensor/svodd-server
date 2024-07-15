@@ -136,9 +136,9 @@ func parseAvatarFile(avatarFile string) *url.URL {
 // то он создает новый QuestionAnswer, добавляет его в массив Content и начинает новый цикл.
 func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 	// "Ведущий:" - это текст, который говорит, что начинается новый вопрос.
-	moderator := "Ведущий:"
+	moderator := []string{"Ведущий:", "Ведущая:"}
 	// "Валерий Викторович Пякин:" - это текст, который говорит, что начинается новый ответ.
-	responsible := []string{"Валерий Викторович Пякин:", "Валерий Викторович:"}
+	responsible := []string{"Валерий Викторович Пякин:", "Валерий Викторович:", "Валерий"}
 
 	// isQuestion - это флаг, который говорит, что мы находимся в вопросе.
 	isQuestion := false
@@ -157,9 +157,9 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 		text := strings.TrimSpace(s.Text())
 
 		// Мы ищем текст "Ведущий:".
-		moderatorIndex := strings.Index(text, moderator)
+		moderatorIndex, curModerator := checkStrIndex(text, moderator)
 		// Мы ищем текст "Валерий Викторович Пякин:".
-		responsibleIndex := chekResponsibleIndex(text, responsible)
+		responsibleIndex, curResponsible := checkStrIndex(text, responsible)
 
 		// Если нашелся текст "Ведущий:", то мы начинаем новый вопрос.
 		if moderatorIndex == 0 {
@@ -171,7 +171,7 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 			}
 
 			// Мы добавляем текст в массив вопроса.
-			text = WrapPhrase(moderator, text)
+			text = WrapPhrase(*curModerator, text)
 			question = append(question, text)
 			isQuestion = true
 			isAnswer = false
@@ -179,9 +179,9 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 
 		// Если нашелся текст "Валерий Викторович Пякин:", то мы начинаем новый ответ.
 		if responsibleIndex == 0 {
-			for _, resp := range responsible {
-				text = WrapPhrase(resp, text)
-			}
+
+			text = WrapPhrase(*curResponsible, text)
+
 			// Мы добавляем текст в массив ответа.
 			answer = append(answer, text)
 			isAnswer = true
@@ -247,13 +247,15 @@ func (e *Entry) splitAnswers() {
 	e.Fragments = result
 }
 
-func chekResponsibleIndex(text string, responsible []string) int {
-	for _, r := range responsible {
+func checkStrIndex(text string, str []string) (int, *string) {
+	// Iterate over the strings in the array
+	for _, r := range str {
+		// Check if the current string is found at the beginning of the text
 		if strings.Index(text, r) == 0 {
-			return 0
+			return 0, &r // Return the index and a pointer to the matched string
 		}
 	}
-	return -1
+	return -1, nil // Return -1 if no match is found
 }
 
 // WrapPhrase wraps a specific phrase in a text with a strong tag.
