@@ -12,7 +12,7 @@ splitter:
 parsers:
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/question/view-50275
   - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
-    pages: 11
+    pages: 13
     fetch_all: false
   # - url: https://xn----8sba0bbi0cdm.xn--p1ai/qa/video
   #   pages: 0

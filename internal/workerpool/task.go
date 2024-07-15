@@ -3,8 +3,6 @@ package workerpool
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/terratensor/svodd-server/internal/entities/answer"
 )
 
 /**
@@ -14,18 +12,18 @@ Task содержит все необходимое для обработки з
 */
 
 type Task struct {
-	Err               error
-	Data              *url.URL
-	f                 func(interface{}) error
-	ManticoreStorages *[]answer.Entries
-	PsqlStorage       *answer.Entries
+	Err  error
+	Data *url.URL
+	f    func(interface{}) error
+	// ManticoreStorages *[]answer.Entries
+	// PsqlStorage       *answer.Entries
 }
 
-func NewTask(f func(interface{}) error, data *url.URL, storages *[]answer.Entries) *Task {
+func NewTask(f func(interface{}) error, data *url.URL) *Task {
 	return &Task{
-		f:                 f,
-		Data:              data,
-		ManticoreStorages: storages,
+		f:    f,
+		Data: data,
+		// ManticoreStorages: storages,
 	}
 }
 

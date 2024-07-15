@@ -44,7 +44,7 @@ func main() {
 				time.Sleep(100 * time.Millisecond)
 				// e := data.(answer.Entry)
 				return nil
-			}, <-ch, &manticoreStorages)
+			}, <-ch)
 			pool.AddTask(task)
 		}
 	}()
