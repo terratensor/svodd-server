@@ -103,9 +103,15 @@ const TypeAQComment = 3
 func makeAnswerEntries(entry *questionanswer.Entry) *[]answer.Entry {
 	var entries []answer.Entry
 	position := 1
+
+	text := fmt.Sprintf("<h4>%v</h4> <p><span class=\"link\">%v</span></p>", entry.Title, entry.Video.String())
+	if len(entry.Fragments) == 0 {
+		text += entry.Html
+	}
+
 	answerEntry := answer.Entry{
 		Username: entry.Title,
-		Text:     fmt.Sprintf("<h4>%v</h4> <p><span class=\"link\">%v</span></p>", entry.Title, entry.Video.String()),
+		Text:     text,
 		Url:      entry.Url.String(),
 		Datetime: entry.Datetime,
 		Type:     TypeAQTeaser,

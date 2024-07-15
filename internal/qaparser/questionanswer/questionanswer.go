@@ -21,6 +21,7 @@ type Entry struct {
 	Content   []QuestionAnswer
 	Fragments []Fragment
 	Comments  []Comment
+	Html      string
 }
 
 type Fragment struct {
@@ -93,13 +94,24 @@ func (e *Entry) Parse(resBytes []byte) error {
 	}
 
 	els := doc.Find("#answer-content").First()
+	e.Html, err = goquery.OuterHtml(els)
+	if err != nil {
+		log.Printf("failed to get html: %v", err)
+	}
 	e.SplitIntoChunks(els)
 
 	els = doc.Find(".comment-list").First()
 	els.Find(".comment-item").Each(func(i int, s *goquery.Selection) {
+		// сохраняем текст комментария вместе с html кодом
+		text, err := goquery.OuterHtml(s.Find(".comment-text"))
+		if err != nil {
+			log.Printf("failed to get comment html: %v", err)
+			text = s.Find(".comment-text").Text()
+		}
+
 		e.Comments = append(e.Comments, Comment{
 			Username:   strings.TrimSpace(s.Find(".username").Text()),
-			Text:       strings.TrimSpace(s.Find(".comment-text").Text()),
+			Text:       strings.TrimSpace(text),
 			AvatarFile: parseAvatarFile(s.Find(".ava-80").AttrOr("src", "")),
 			Role:       strings.TrimSpace(s.Find(".role").Text()),
 			Datetime:   parseDatetime(s.Find(".datetime").Text()),
@@ -108,7 +120,6 @@ func (e *Entry) Parse(resBytes []byte) error {
 			Position:   i + 1,
 		})
 	})
-	// log.Printf("entry: %v", e)
 	return nil
 }
 
