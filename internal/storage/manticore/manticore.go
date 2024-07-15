@@ -171,7 +171,7 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 
 	filter := map[string]interface{}{"url": url}
 	query := map[string]interface{}{"equals": filter}
-	limit := 1000
+	limit := 10000
 	sort := []map[string]interface{}{{"position": "asc"}}
 
 	searchRequest.SetQuery(query)
@@ -191,10 +191,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %v", resp)
 	}
-	// log.Printf("resp: %+v\n err: %v", res, err)
-
-	// var hits []map[string]interface{}
-	// var _id interface{}
 
 	hits := res.Hits.Hits
 
@@ -202,12 +198,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 	for _, hit := range hits {
 
 		id := hit.Id
-		// id, err := strconv.ParseInt(_id.(string), 10, 64)
-		// if err != nil {
-		// 	return nil, fmt.Errorf("failed to parse ID to int64: %v", resp)
-		// }
-
-		// создаем entry из hit
 		sr := hit.Source
 		jsonData, err := json.Marshal(sr)
 		if err != nil {
@@ -218,9 +208,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 		err = json.Unmarshal(jsonData, &dbe)
 		if err != nil {
 			log.Fatal(err)
-		}
-		if &dbe == nil {
-			return nil, nil
 		}
 
 		datetime := time.Unix(dbe.Datetime, 0)
@@ -244,56 +231,6 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 
 	return &entries, nil
 }
-
-// func (c *Client) FindByUrl(ctx context.Context, url string) (*answer.Entry, error) {
-// 	// response from `Search`: SearchRequest
-// 	searchRequest := *openapiclient.NewSearchRequest(c.Index)
-
-// 	// Perform a search
-// 	// Пример для запроса фильтра по url
-// 	filter := map[string]interface{}{"url": url}
-// 	query := map[string]interface{}{"equals": filter}
-
-// 	searchRequest.SetQuery(query)
-// 	resp, r, err := c.apiClient.SearchAPI.Search(ctx).SearchRequest(searchRequest).Execute()
-
-// 	if err != nil {
-// 		fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
-// 		return nil, fmt.Errorf("Error when calling `SearchAPI.Search.Equals``: %v\n", err)
-// 	}
-
-// 	id, err := getEntryID(resp)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	dbe := makeDBEntry(resp)
-// 	if dbe == nil {
-// 		return nil, nil
-// 	}
-
-// 	datetime := time.Unix(dbe.Datetime, 0)
-// 	// published := time.Unix(dbe.Published, 0)
-// 	// created := time.Unix(dbe.Created, 0)
-// 	// updatedAt := time.Unix(dbe.UpdatedAt, 0)
-
-// 	ent := &answer.Entry{
-// 		ID:         id,
-// 		Username:   dbe.Username,
-// 		Text:       dbe.Text,
-// 		Url:        dbe.Url,
-// 		AvatarFile: dbe.AvatarFile,
-// 		Role:       dbe.Role,
-// 		Datetime:   &datetime,
-// 		DataID:     dbe.DataID,
-// 		ParentID:   dbe.ParentID,
-// 		Type:       dbe.Type,
-// 		Position:   dbe.Position,
-// 		Chunk:      dbe.Chunk,
-// 	}
-
-// 	return ent, nil
-// }
 
 func getEntryID(response *openapiclient.SearchResponse) (*int64, error) {
 	if len(response.Hits.Hits) == 0 {
