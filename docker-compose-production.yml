@@ -1,0 +1,52 @@
+version: "3.9"
+services:
+
+  service:
+    image: ${REGISTRY}/svodd-server-service:${IMAGE_TAG}
+    build:
+      context: .
+      dockerfile: ./docker/service/Dockerfile
+    networks:
+      - svodd-network
+    volumes:
+      - config:/app/config
+    environment:
+      CONFIG_PATH: './config/prod.yaml'
+      MANTICORE_HOST: 'manticore'
+    command: './svodd-server-service'
+    deploy:
+      placement:
+        constraints: [ node.labels.worker == worker-1 ]
+      restart_policy:
+        condition: on-failure
+
+  parser:
+    image: ${REGISTRY}/svodd-server-parser:${IMAGE_TAG}
+    build:
+      context: .
+      dockerfile: ./docker/parser/Dockerfile
+    networks:
+      - svodd-network
+    volumes:
+      - config:/app/config
+    environment:
+      CONFIG_PATH: './config/parser/prod.yaml'
+      MANTICORE_HOST: 'manticore'
+    command: './svodd-server-parser'
+    deploy:
+      placement:
+        constraints: [ node.labels.worker == worker-1 ]
+      replicas: 0
+      restart_policy:
+        condition: on-failure
+
+volumes:
+  config:
+
+
+networks:
+  traefik-public:
+    external: true
+  svodd-network:
+    name: svodd-network
+    external: true
