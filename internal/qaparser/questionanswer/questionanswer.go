@@ -11,6 +11,7 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/terratensor/svodd-server/internal/lib/httpclient"
+	"golang.org/x/net/html"
 )
 
 type Entry struct {
@@ -94,10 +95,16 @@ func (e *Entry) Parse(resBytes []byte) error {
 	}
 
 	els := doc.Find("#answer-content").First()
-	e.Html, err = goquery.OuterHtml(els)
-	if err != nil {
-		log.Printf("failed to get html: %v", err)
-	}
+	// Populate the `Html` field of the `Entry` struct with the outer HTML of the
+	// "#answer-content" element.
+	//
+	// This field will be used later to create a new QuestionAnswer struct.
+	//
+	// Parameters:
+	//   - els: The goquery Selection representing the "#answer-content" element.
+	//
+	// Return type: None.
+	e.Html = populateOuterHtml(els)
 	e.SplitIntoChunks(els)
 
 	els = doc.Find(".comment-list").First()
@@ -303,4 +310,59 @@ func WrapPhrase(phrase, text string) string {
 	wrapped := fmt.Sprintf("%v<strong>%v</strong>%v", prefix, phrase, suffix)
 
 	return wrapped
+}
+
+// populateOuterHtml generates the outer HTML representation of the given goquery Selection.
+// This func keeps track of whether the current node is within a `<table>`,
+// and only removes "style" attributes from nodes outside the table.
+//
+// Parameters:
+// - els: a pointer to the goquery Selection
+// Returns:
+// - a string containing the generated outer HTML
+func populateOuterHtml(els *goquery.Selection) string {
+	htmlStr, err := goquery.OuterHtml(els)
+	if err != nil {
+		log.Printf("failed to get html: %v", err)
+	}
+
+	doc, err := html.Parse(strings.NewReader(htmlStr))
+	if err != nil {
+		panic(err)
+	}
+
+	removeStyle(doc, false)
+
+	var buf strings.Builder
+	html.Render(&buf, doc)
+	return buf.String()
+}
+
+// removeStyle removes the "style" attribute from HTML elements.
+// It skips elements inside tables because they often have inline styles.
+//
+// Parameters:
+// - n: the HTML node to remove the "style" attribute from.
+// - inTable: a boolean indicating whether the current node is inside a table.
+func removeStyle(n *html.Node, inTable bool) {
+	if n.Type == html.ElementNode {
+		switch n.Data {
+		case "table":
+			inTable = true
+		case "/table":
+			inTable = false
+		default:
+			if !inTable {
+				for i := len(n.Attr) - 1; i >= 0; i-- {
+					if n.Attr[i].Key == "style" {
+						copy(n.Attr[i:], n.Attr[i+1:])
+						n.Attr = n.Attr[:len(n.Attr)-1]
+					}
+				}
+			}
+		}
+	}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		removeStyle(c, inTable)
+	}
 }
