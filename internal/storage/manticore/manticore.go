@@ -205,8 +205,6 @@ func (c *Client) Update(ctx context.Context, entry *answer.Entry) error {
 		return fmt.Errorf("error when calling `IndexAPI.Replace``: %v", err)
 	}
 
-	log.Printf("Success `IndexAPI.Replace`: %v", r)
-
 	return nil
 }
 
