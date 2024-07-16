@@ -139,6 +139,9 @@ func parseAvatarFile(avatarFile string) *url.URL {
 	return u
 }
 
+var moderator = []string{"Ведущий:", "Ведущая:"}
+var responsible = []string{"Валерий Викторович Пякин:", "Валерий Викторович:", "Пякин Валерий Викторович", "Валерий"}
+
 // SplitIntoChunks разбивает текст на вопросы и ответы.
 // Он основан на поиске конкретных строк в тексте.
 // Если нашелся текст "Ведущий:", то он начинает добавлять текст в массив вопросов.
@@ -146,10 +149,6 @@ func parseAvatarFile(avatarFile string) *url.URL {
 // Если нашелся текст "Ведущий:" или "Валерий Викторович Пякин:" в середине массива текста,
 // то он создает новый QuestionAnswer, добавляет его в массив Content и начинает новый цикл.
 func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
-	// "Ведущий:" - это текст, который говорит, что начинается новый вопрос.
-	moderator := []string{"Ведущий:", "Ведущая:"}
-	// "Валерий Викторович Пякин:" - это текст, который говорит, что начинается новый ответ.
-	responsible := []string{"Валерий Викторович Пякин:", "Валерий Викторович:", "Пякин Валерий Викторович", "Валерий"}
 	// isQuestion - это флаг, который говорит, что мы находимся в вопросе.
 	isQuestion := false
 	// isAnswer - это флаг, который говорит, что мы находимся в ответе.
@@ -224,6 +223,7 @@ func (e *Entry) splitAnswers() {
 	for _, qa := range e.Content {
 
 		isNewFragment := true
+		startAnswer := false
 		chunk := 1
 		fragment := Fragment{QuestionAnswer: "", Chunk: chunk}
 
@@ -237,9 +237,32 @@ func (e *Entry) splitAnswers() {
 					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"question\">%v</p>", q)
 				}
 				isNewFragment = false
+				startAnswer = true
 			}
 
-			fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
+			// Check if the answer starts with "Валерий Викторович Пякин:"
+			// and if it doesn't already have a <strong> tag.
+			// If so, add a <strong> tag to the answer.
+			// If not, add the answer without any changes.
+			if startAnswer {
+				// Check if the answer starts with "Валерий Викторович Пякин:".
+				responsibleIndex, _ := checkStrIndex(ans, responsible)
+				if responsibleIndex != 0 && strings.Index(ans, "<strong>") != 0 {
+					// Add a <strong> tag to the answer.
+					fragment.QuestionAnswer += fmt.Sprintf(
+						"<p class=\"answer\"><strong>Валерий Викторович: … </strong>%v</p>",
+						ans,
+					)
+					startAnswer = false
+				} else {
+					// Add the answer without any changes.
+					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
+					startAnswer = false
+				}
+			} else {
+				// Add the answer without any changes.
+				fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
+			}
 
 			if (utf8.RuneCountInString(fragment.QuestionAnswer)) > 2700 {
 				result = append(result, fragment)
