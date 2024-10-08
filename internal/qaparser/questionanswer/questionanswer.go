@@ -269,11 +269,14 @@ func (e *Entry) splitAnswers() {
 				responsibleIndex, _ := checkStrIndex(ans, e.responsible)
 				if responsibleIndex != 0 && strings.Index(ans, "<strong>") != 0 {
 					// Add a <strong> tag to the answer.
-					fragment.QuestionAnswer += fmt.Sprintf(
-						"<p class=\"answer\"><strong>Валерий Викторович: … </strong>%v</p>",
-						ans,
-					)
-					startAnswer = false
+					// Условие если ans не пустой, во избежание висящих … без текста, когда были вырезаны изображения из исходника.
+					if ans != "" {
+						fragment.QuestionAnswer += fmt.Sprintf(
+							"<p class=\"answer\"><strong>Валерий Викторович: … </strong>%v</p>",
+							ans,
+						)
+						startAnswer = false
+					}
 				} else {
 					// Add the answer without any changes.
 					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
