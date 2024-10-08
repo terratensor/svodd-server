@@ -39,7 +39,7 @@ func main() {
 				time.Sleep(100 * time.Millisecond)
 				log.Printf("Task %v processed\n", taskID.String())
 
-				entry := questionanswer.NewEntry(taskID)
+				entry := questionanswer.NewEntry(taskID, cfg)
 
 				client := httpclient.New(nil)
 				err := entry.FetchData(client)

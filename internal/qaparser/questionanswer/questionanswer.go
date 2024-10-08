@@ -10,19 +10,22 @@ import (
 	"unicode/utf8"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/terratensor/svodd-server/internal/config"
 	"github.com/terratensor/svodd-server/internal/lib/httpclient"
 	"golang.org/x/net/html"
 )
 
 type Entry struct {
-	Url       *url.URL
-	Title     string
-	Video     *url.URL
-	Datetime  *time.Time
-	Content   []QuestionAnswer
-	Fragments []Fragment
-	Comments  []Comment
-	Html      string
+	Url         *url.URL
+	Title       string
+	Video       *url.URL
+	Datetime    *time.Time
+	Content     []QuestionAnswer
+	Fragments   []Fragment
+	Comments    []Comment
+	Html        string
+	moderator   []string
+	responsible []string
 }
 
 type Fragment struct {
@@ -48,9 +51,22 @@ type Comment struct {
 
 const TypeComment = 3
 
-func NewEntry(url *url.URL) *Entry {
+var defaultModerator = []string{"Ведущий", "Ведущая:", "Дмитрий Таран:", "Сергей Будков:", "ВедущийЯ:", "Айнис Казимирович Петкус"}
+var defaultResponsible = []string{"Валерий Викторович Пякин:", "Валерий Викторович", "Пякин Валерий Викторович", "В.В. Пякин:", "Валерий"}
+
+func NewEntry(url *url.URL, cfg *config.Config) *Entry {
+	moderator := cfg.Questionanswer.Moderator
+	if condition := len(moderator) == 0; condition {
+		moderator = defaultModerator
+	}
+	responsible := cfg.Questionanswer.Responsible
+	if condition := len(responsible) == 0; condition {
+		responsible = defaultResponsible
+	}
 	return &Entry{
-		Url: url,
+		Url:         url,
+		moderator:   moderator,
+		responsible: responsible,
 	}
 }
 
@@ -146,9 +162,6 @@ func parseAvatarFile(avatarFile string) *url.URL {
 	return u
 }
 
-var moderator = []string{"Ведущий", "Ведущая:", "Дмитрий Таран:", "Сергей Будков:", "ВедущийЯ:", "Айнис Казимирович Петкус"}
-var responsible = []string{"Валерий Викторович Пякин:", "Валерий Викторович", "Пякин Валерий Викторович", "В.В. Пякин:", "Валерий"}
-
 // SplitIntoChunks разбивает текст на вопросы и ответы.
 // Он основан на поиске конкретных строк в тексте.
 // Если нашелся текст "Ведущий:", то он начинает добавлять текст в массив вопросов.
@@ -173,9 +186,9 @@ func (e *Entry) SplitIntoChunks(els *goquery.Selection) {
 		text := strings.TrimSpace(s.Text())
 
 		// Мы ищем текст "Ведущий:".
-		moderatorIndex, curModerator := checkStrIndex(text, moderator)
+		moderatorIndex, curModerator := checkStrIndex(text, e.moderator)
 		// Мы ищем текст "Валерий Викторович Пякин:".
-		responsibleIndex, curResponsible := checkStrIndex(text, responsible)
+		responsibleIndex, curResponsible := checkStrIndex(text, e.responsible)
 
 		// Если нашелся текст "Ведущий:", то мы начинаем новый вопрос.
 		if moderatorIndex == 0 {
@@ -253,14 +266,17 @@ func (e *Entry) splitAnswers() {
 			// If not, add the answer without any changes.
 			if startAnswer {
 				// Check if the answer starts with "Валерий Викторович Пякин:".
-				responsibleIndex, _ := checkStrIndex(ans, responsible)
+				responsibleIndex, _ := checkStrIndex(ans, e.responsible)
 				if responsibleIndex != 0 && strings.Index(ans, "<strong>") != 0 {
 					// Add a <strong> tag to the answer.
-					fragment.QuestionAnswer += fmt.Sprintf(
-						"<p class=\"answer\"><strong>Валерий Викторович: … </strong>%v</p>",
-						ans,
-					)
-					startAnswer = false
+					// Условие если ans не пустой, во избежание висящих … без текста, когда были вырезаны изображения из исходника.
+					if ans != "" {
+						fragment.QuestionAnswer += fmt.Sprintf(
+							"<p class=\"answer\"><strong>Валерий Викторович: … </strong>%v</p>",
+							ans,
+						)
+						startAnswer = false
+					}
 				} else {
 					// Add the answer without any changes.
 					fragment.QuestionAnswer += fmt.Sprintf("<p class=\"answer\">%v</p>", ans)
