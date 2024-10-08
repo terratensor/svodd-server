@@ -15,12 +15,18 @@ type Config struct {
 	RandomDelay     *time.Duration `yaml:"random_delay" env-default:"150s"`
 	ManticoreIndex  []Index        `yaml:"manticore"`
 	EntryChanBuffer int            `yaml:"entry_chan_buffer" env-default:"20"`
+	Questionanswer  Questionanswer `yaml:"questionanswer"`
 	Splitter        Splitter       `yaml:"splitter"`
 	Parsers         []Parser       `yaml:"parsers"`
 }
 
 type Index struct {
 	Name string `yaml:"index"`
+}
+
+type Questionanswer struct {
+	Moderator   []string `yaml:"moderator"`
+	Responsible []string `yaml:"responsible"`
 }
 
 type Parser struct {
