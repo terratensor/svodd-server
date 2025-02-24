@@ -27,32 +27,34 @@ type Response struct {
 			Id     int64 `json:"_id"`
 			Score  int   `json:"_score"`
 			Source struct {
-				Username   string `json:"username"`
-				Text       string `json:"text"`
-				AvatarFile string `json:"avatar_file"`
-				Url        string `json:"url"`
-				Role       string `json:"role"`
-				Datetime   int64  `json:"datetime"`
-				DataID     int    `json:"data_id"`
-				ParentID   int    `json:"parent_id"`
-				Type       int    `json:"type"`
-				Position   int    `json:"position"`
+				Username      string `json:"username"`
+				Text          string `json:"text"`
+				AvatarFile    string `json:"avatar_file"`
+				Url           string `json:"url"`
+				Role          string `json:"role"`
+				Datetime      int64  `json:"datetime"`
+				DataID        int    `json:"data_id"`
+				ParentID      int    `json:"parent_id"`
+				Type          int    `json:"type"`
+				Position      int    `json:"position"`
+				CommentsCount int    `json:"comments_count"`
 			} `json:"_source"`
 		} `json:"hits"`
 	} `json:"hits"`
 }
 
 type DBEntry struct {
-	Username   string `json:"username"`
-	Text       string `json:"text"`
-	Url        string `json:"url"`
-	AvatarFile string `json:"avatar_file"`
-	Role       string `json:"role"`
-	Datetime   int64  `json:"datetime"`
-	DataID     int64  `json:"data_id"`
-	ParentID   int64  `json:"parent_id"`
-	Type       int    `json:"type"`
-	Position   int    `json:"position"`
+	Username      string `json:"username"`
+	Text          string `json:"text"`
+	Url           string `json:"url"`
+	AvatarFile    string `json:"avatar_file"`
+	Role          string `json:"role"`
+	Datetime      int64  `json:"datetime"`
+	DataID        int64  `json:"data_id"`
+	ParentID      int64  `json:"parent_id"`
+	Type          int    `json:"type"`
+	Position      int    `json:"position"`
+	CommentsCount int    `json:"comments_count"`
 }
 
 type Client struct {
@@ -84,7 +86,7 @@ func New(tbl string) (*Client, error) {
 
 	if len(data) > 0 {
 		myMap := data[0].(map[string]interface{})
-		indexValue := myMap["Index"]
+		indexValue := myMap["Table"]
 
 		if indexValue != tbl {
 			err := createTable(apiClient, tbl)
@@ -112,7 +114,7 @@ func castTime(value *time.Time) int64 {
 func createTable(apiClient *openapiclient.APIClient, tbl string) error {
 
 	log.Println("creating table", tbl)
-	query := fmt.Sprintf("create table %v(username text, `text` text, avatar_file text, url string, role string, datetime timestamp, data_id int, parent_id int, type int, position int) min_infix_len='3' index_exact_words='1' morphology='stem_en, stem_ru' index_sp='1'", tbl)
+	query := fmt.Sprintf("create table %v(username text, `text` text, avatar_file text, url string, role string, datetime timestamp, data_id int, parent_id int, type int, position int, comments_count int) min_infix_len='3' index_exact_words='1' morphology='stem_en, stem_ru' index_sp='1'", tbl)
 
 	sqlRequest := apiClient.UtilsAPI.Sql(context.Background()).Body(query)
 	_, _, err := apiClient.UtilsAPI.SqlExecute(sqlRequest)
@@ -126,16 +128,17 @@ func createTable(apiClient *openapiclient.APIClient, tbl string) error {
 func (c *Client) Insert(ctx context.Context, entry *answer.Entry) (*int64, error) {
 
 	dbe := &DBEntry{
-		Username:   entry.Username,
-		Text:       entry.Text,
-		Url:        entry.Url,
-		AvatarFile: entry.AvatarFile,
-		Role:       entry.Role,
-		Datetime:   castTime(entry.Datetime),
-		DataID:     entry.DataID,
-		ParentID:   entry.ParentID,
-		Type:       entry.Type,
-		Position:   entry.Position,
+		Username:      entry.Username,
+		Text:          entry.Text,
+		Url:           entry.Url,
+		AvatarFile:    entry.AvatarFile,
+		Role:          entry.Role,
+		Datetime:      castTime(entry.Datetime),
+		DataID:        entry.DataID,
+		ParentID:      entry.ParentID,
+		Type:          entry.Type,
+		Position:      entry.Position,
+		CommentsCount: entry.CommentsCount,
 	}
 
 	//marshal into JSON buffer
@@ -168,16 +171,17 @@ func (c *Client) Insert(ctx context.Context, entry *answer.Entry) (*int64, error
 func (c *Client) Update(ctx context.Context, entry *answer.Entry) error {
 
 	dbe := &DBEntry{
-		Username:   entry.Username,
-		Text:       entry.Text,
-		Url:        entry.Url,
-		AvatarFile: entry.AvatarFile,
-		Role:       entry.Role,
-		Datetime:   castTime(entry.Datetime),
-		DataID:     entry.DataID,
-		ParentID:   entry.ParentID,
-		Type:       entry.Type,
-		Position:   entry.Position,
+		Username:      entry.Username,
+		Text:          entry.Text,
+		Url:           entry.Url,
+		AvatarFile:    entry.AvatarFile,
+		Role:          entry.Role,
+		Datetime:      castTime(entry.Datetime),
+		DataID:        entry.DataID,
+		ParentID:      entry.ParentID,
+		Type:          entry.Type,
+		Position:      entry.Position,
+		CommentsCount: entry.CommentsCount,
 	}
 
 	//marshal into JSON buffer
@@ -256,17 +260,18 @@ func (c *Client) FindAllByUrl(ctx context.Context, url string) (*[]answer.Entry,
 		datetime := time.Unix(dbe.Datetime, 0)
 
 		ent := &answer.Entry{
-			ID:         &id,
-			Username:   dbe.Username,
-			Text:       dbe.Text,
-			Url:        dbe.Url,
-			AvatarFile: dbe.AvatarFile,
-			Role:       dbe.Role,
-			Datetime:   &datetime,
-			DataID:     dbe.DataID,
-			ParentID:   dbe.ParentID,
-			Type:       dbe.Type,
-			Position:   dbe.Position,
+			ID:            &id,
+			Username:      dbe.Username,
+			Text:          dbe.Text,
+			Url:           dbe.Url,
+			AvatarFile:    dbe.AvatarFile,
+			Role:          dbe.Role,
+			Datetime:      &datetime,
+			DataID:        dbe.DataID,
+			ParentID:      dbe.ParentID,
+			Type:          dbe.Type,
+			Position:      dbe.Position,
+			CommentsCount: dbe.CommentsCount,
 		}
 
 		entries = append(entries, *ent)
