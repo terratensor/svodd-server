@@ -57,7 +57,7 @@ func TestHttpClient_Get(t *testing.T) {
 
 		// Create a new HttpClient with the mock server URL
 		client := &HttpClient{
-			Client: &http.Client{},
+			Client:    &http.Client{},
 			UserAgent: "Test User Agent",
 		}
 
@@ -84,12 +84,12 @@ func TestHttpClient_Get(t *testing.T) {
 	t.Run("Request fails", func(t *testing.T) {
 		// Create a new HttpClient with an invalid URL
 		client := &HttpClient{
-			Client: &http.Client{},
+			Client:    &http.Client{},
 			UserAgent: "Test User Agent",
 		}
 
 		// Parse an invalid URL
-		u, err := url.Parse("http://invalid-url.com")
+		u, err := url.Parse("http://invalid-url_com")
 		if err != nil {
 			t.Fatalf("Failed to parse URL: %v", err)
 		}
@@ -111,7 +111,7 @@ func TestHttpClient_Get(t *testing.T) {
 
 		// Create a new HttpClient with the mock server URL
 		client := &HttpClient{
-			Client: &http.Client{},
+			Client:    &http.Client{},
 			UserAgent: "Test User Agent",
 		}
 
